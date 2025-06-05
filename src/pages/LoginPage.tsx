@@ -20,6 +20,11 @@ export const LoginPage: React.FC = () => {
                   Checkout
                 </Link>
               </li>
+              <li>
+                <Link to="/nft-access" className="text-slate-300 hover:text-white transition-colors">
+                  NFT Access
+                </Link>
+              </li>
             </ul>
           </nav>
         </div>

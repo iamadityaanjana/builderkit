@@ -5,6 +5,7 @@ import "@burnt-labs/ui/dist/index.css";
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { CheckoutPage } from './pages/CheckoutPage';
+import { NFTGatedPage } from './pages/NFTGatedPage';
 
 function App() {
 
@@ -23,6 +24,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/nft-access" element={<NFTGatedPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
