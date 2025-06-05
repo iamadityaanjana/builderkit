@@ -1,0 +1,262 @@
+import React, { useState } from 'react';
+import { useAbstraxionAccount, useAbstraxionSigningClient } from '@burnt-labs/abstraxion';
+import "@burnt-labs/abstraxion/dist/index.css";
+import "@burnt-labs/ui/dist/index.css";
+import { savePaymentSession } from '../utils/payment';
+import { xionToBaseUnits, createTransferMessage } from '../utils/xionHelpers';
+
+interface MagicCheckoutProps {
+  productId: string;
+  amount: string;
+  currency?: string;
+  onSuccess?: (txHash: string) => void;
+  onError?: (error: Error) => void;
+}
+
+export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
+  productId,
+  amount,
+  currency = 'usdc',
+  onSuccess,
+  onError
+}) => {
+  const { client, signArb } = useAbstraxionSigningClient();
+  const { data: account } = useAbstraxionAccount();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+
+  const handleCheckout = async () => {
+    if (!client) {
+      setError('Wallet not connected. Please connect your wallet first.');
+      onError && onError(new Error('Wallet not connected'));
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setStatus('processing');
+
+    try {
+      // Create payment session data
+      const paymentData = {
+        productId,
+        amount,
+        currency,
+        timestamp: new Date().toISOString()
+      };
+
+      // Save session data
+      savePaymentSession(paymentData);
+
+      // Create a real transaction on XION testnet
+      if (!client || !account) {
+        throw new Error('Client or account not available');
+      }
+
+      // Recipient address - for demonstration purposes
+      const recipientAddress = "xion1edjlrc4jvldkpypfaevsvc5vt5xz6mkcl0hf7u";
+      
+      // For this example, we'll send a small amount of XION tokens (0.01)
+      const sendAmount = "0.01";
+      
+      // Convert to base units using our helper function (prevents BigInt serialization issues)
+      const amountInBaseUnits = xionToBaseUnits(sendAmount);
+      
+      console.log("Preparing transaction from:", account.bech32Address);
+      console.log("Sending to:", recipientAddress);
+      console.log("Amount:", sendAmount, "XION =", amountInBaseUnits, "uxion");
+      
+      try {
+        // Create the transfer message using our helper function
+        const msg = createTransferMessage(
+          account.bech32Address,
+          recipientAddress,
+          sendAmount
+        );
+
+        console.log("Sending transaction with payload:", JSON.stringify(msg, null, 2));
+        
+        // Execute the send transaction
+        const result = await client.signAndBroadcast(
+          account.bech32Address,
+          [msg],
+          "auto" // Fee calculation - will be sponsored by treasury
+        );
+        
+        console.log("Transaction result:", result);
+        
+        // Check if transaction was successful (code 0 means success)
+        if (result.code !== 0) {
+          throw new Error(`Transaction failed: ${result.rawLog || 'Unknown error'}`);
+        }
+        
+        // Get transaction hash from the result
+        // The example shows transactionHash is available directly in the result object
+        const txHash = result.transactionHash;
+        
+        console.log("Transaction hash:", txHash);
+        console.log("Block height:", result.height);
+        
+        setTxHash(txHash);
+        setStatus('success');
+        onSuccess && onSuccess(txHash);
+        setLoading(false);
+        
+      } catch (txError: any) {
+        console.error("Transaction error:", txError);
+        
+        // Enhanced error logging to help with debugging
+        console.error("Error details:", {
+          name: txError.name,
+          message: txError.message,
+          stack: txError.stack?.split("\n").slice(0, 3).join("\n") // Log first few lines of stack
+        });
+        
+        throw new Error(`Transaction failed: ${txError.message}`);
+      }
+
+
+    } catch (err: any) {
+      console.error('Checkout failed:', err);
+      
+      // Handle different types of errors with more specific messages
+      let errorMessage = 'Payment processing failed';
+      
+      if (err.message?.includes('BigInt')) {
+        errorMessage = 'Transaction formatting error. This has been fixed - please try again.';
+        console.error('BigInt serialization error detected:', err);
+      } else if (err.message?.includes('rejected')) {
+        errorMessage = 'Transaction was rejected. Please try again.';
+      } else if (err.message?.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds in your wallet.';
+      } else if (err.message?.includes('account sequence mismatch')) {
+        errorMessage = 'Transaction sequence error. Please refresh and try again.';
+      } else if (err.message?.includes('cannot be broadcasted')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (err.message?.includes('timeout')) {
+        errorMessage = 'Transaction timed out. The network might be congested.';
+      } else if (err.message?.includes('out of gas')) {
+        errorMessage = 'Transaction ran out of gas. Try a smaller transaction.';
+      } else if (err.message?.includes('unauthorized')) {
+        errorMessage = 'Authorization failed. Please reconnect your wallet.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      setStatus('error');
+      onError && onError(err);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[70vh] p-8">
+      <div className="w-full max-w-md bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700">
+        
+        {/* Logo & Title */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-20 h-20 bg-black border-2 border-white rounded-full flex items-center justify-center mb-4 shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white" className="w-8 h-8">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-white">
+            Magic Checkout
+          </h1>
+          <p className="text-white text-sm mt-2 text-center">
+            Complete your payment seamlessly with XION
+          </p>
+        </div>
+
+        {/* Product Details */}
+        <div className="bg-black border border-slate-700 rounded-xl p-4 mb-6">
+          <div className="flex justify-between mb-3">
+            <span className="text-white">Product ID:</span>
+            <span className="text-white font-mono">{productId}</span>
+          </div>
+          <div className="flex justify-between mb-3">
+            <span className="text-white">Amount:</span>
+            <span className="text-white font-bold">{amount} {currency}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-white">Network Fee:</span>
+            <span className="text-green-400">Sponsored</span>
+          </div>
+        </div>
+
+        {status === 'success' ? (
+          <div className="space-y-4">
+            <div className="bg-green-900/30 p-4 rounded-xl border border-green-700">
+              <div className="flex items-center justify-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-white text-center">Payment successful!</p>
+              <p className="text-xs text-center text-slate-300 mt-1">Transaction has been confirmed on XION</p>
+              <div className="mt-3 pt-3 border-t border-green-700/50">
+                <p className="text-xs text-slate-300">Transaction Hash:</p>
+                <p className="text-xs text-green-400 font-mono break-all">{txHash}</p>
+                {txHash && (
+                  <a 
+                    href={`https://explorer.burnt.com/xion-testnet-2/tx/${txHash}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="mt-2 text-xs text-blue-400 hover:text-blue-300 flex items-center justify-center gap-1"
+                  >
+                    <span>View on Explorer</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                )}
+              </div>
+            </div>
+            <button 
+              className="w-full bg-black hover:bg-slate-900 text-white py-3 px-4 rounded-xl font-medium border border-white transition-colors duration-300"
+              onClick={() => setStatus('idle')}
+            >
+              New Payment
+            </button>
+          </div>
+        ) : (
+          <button
+            className={`w-full ${status === 'processing' ? 'bg-slate-700' : 'bg-black hover:bg-slate-900'} text-white py-3.5 px-4 rounded-xl font-medium border border-white transition-all duration-300 shadow-md ${!loading ? 'hover:shadow-lg hover:translate-y-[-2px] active:translate-y-[1px]' : ''} flex items-center justify-center gap-2`}
+            onClick={handleCheckout}
+            disabled={loading || !client}
+          >
+            {status === 'processing' ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              'Pay Now'
+            )}
+          </button>
+        )}
+
+        {error && (
+          <div className="mt-4 p-3 bg-red-900/30 border border-red-800 rounded-lg">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+        
+        <div className="mt-6 pt-4 border-t border-slate-700 flex items-center justify-center gap-2">
+          <div className="w-4 h-4 bg-slate-700 rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white" className="w-2 h-2">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-xs text-slate-400">Powered by XION • Gasless transactions</p>
+        </div>
+      </div>
+    </div>
+  );
+};
