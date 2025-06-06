@@ -4,6 +4,8 @@ import "@burnt-labs/abstraxion/dist/index.css";
 import "@burnt-labs/ui/dist/index.css";
 import { savePaymentSession } from '../utils/payment';
 import { xionToBaseUnits, createTransferMessage } from '../utils/xionHelpers';
+import { TransactionToast } from './TransactionToast';
+import { getTransactionExplorerLink } from '../utils/transactionUtils';
 
 interface MagicCheckoutProps {
   productId: string;
@@ -27,17 +29,16 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
   const [txHash, setTxHash] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
 
+  // Function to execute the payment transaction
   const handleCheckout = async () => {
     if (!client) {
-      setError('Wallet not connected. Please connect your wallet first.');
-      onError && onError(new Error('Wallet not connected'));
-      return;
+      throw new Error('Wallet not connected. Please connect your wallet first.');
     }
 
-    setLoading(true);
-    setError(null);
-    setStatus('processing');
-
+    if (!account?.bech32Address) {
+      throw new Error('Account not available. Please connect your wallet first.');
+    }
+    
     try {
       // Create payment session data
       const paymentData = {
@@ -49,11 +50,6 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
 
       // Save session data
       savePaymentSession(paymentData);
-
-      // Create a real transaction on XION testnet
-      if (!client || !account) {
-        throw new Error('Client or account not available');
-      }
 
       // Recipient address - for demonstration purposes
       const recipientAddress = "xion1edjlrc4jvldkpypfaevsvc5vt5xz6mkcl0hf7u";
@@ -68,56 +64,42 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
       console.log("Sending to:", recipientAddress);
       console.log("Amount:", sendAmount, "XION =", amountInBaseUnits, "uxion");
       
-      try {
-        // Create the transfer message using our helper function
-        const msg = createTransferMessage(
-          account.bech32Address,
-          recipientAddress,
-          sendAmount
-        );
+      // Create the transfer message using our helper function
+      const msg = createTransferMessage(
+        account.bech32Address,
+        recipientAddress,
+        sendAmount
+      );
 
-        console.log("Sending transaction with payload:", JSON.stringify(msg, null, 2));
-        
-        // Execute the send transaction
-        const result = await client.signAndBroadcast(
-          account.bech32Address,
-          [msg],
-          "auto" // Fee calculation - will be sponsored by treasury
-        );
-        
-        console.log("Transaction result:", result);
-        
-        // Check if transaction was successful (code 0 means success)
-        if (result.code !== 0) {
-          throw new Error(`Transaction failed: ${result.rawLog || 'Unknown error'}`);
-        }
-        
-        // Get transaction hash from the result
-        // The example shows transactionHash is available directly in the result object
-        const txHash = result.transactionHash;
-        
-        console.log("Transaction hash:", txHash);
-        console.log("Block height:", result.height);
-        
-        setTxHash(txHash);
-        setStatus('success');
-        onSuccess && onSuccess(txHash);
-        setLoading(false);
-        
-      } catch (txError: any) {
-        console.error("Transaction error:", txError);
-        
-        // Enhanced error logging to help with debugging
-        console.error("Error details:", {
-          name: txError.name,
-          message: txError.message,
-          stack: txError.stack?.split("\n").slice(0, 3).join("\n") // Log first few lines of stack
-        });
-        
-        throw new Error(`Transaction failed: ${txError.message}`);
+      console.log("Sending transaction with payload:", JSON.stringify(msg, null, 2));
+      
+      // Execute the send transaction
+      const result = await client.signAndBroadcast(
+        account.bech32Address,
+        [msg],
+        "auto" // Fee calculation - will be sponsored by treasury
+      );
+      
+      // Check if transaction was successful (code 0 means success)
+      if (result.code !== 0) {
+        throw new Error(`Transaction failed: ${result.rawLog || 'Unknown error'}`);
       }
-
-
+      
+      // Get transaction hash from the result
+      const txHash = result.transactionHash;
+      
+      console.log("Transaction successful!");
+      console.log("Transaction hash:", txHash);
+      console.log("Block height:", result.height);
+      
+      // Update component state with transaction hash
+      setTxHash(txHash);
+      setStatus('success');
+      
+      // Call the onSuccess callback if provided
+      onSuccess && onSuccess(txHash);
+      
+      return { txHash, success: true, blockHeight: result.height };
     } catch (err: any) {
       console.error('Checkout failed:', err);
       
@@ -125,16 +107,15 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
       let errorMessage = 'Payment processing failed';
       
       if (err.message?.includes('BigInt')) {
-        errorMessage = 'Transaction formatting error. This has been fixed - please try again.';
-        console.error('BigInt serialization error detected:', err);
+        errorMessage = 'Transaction formatting error. Please try again.';
       } else if (err.message?.includes('rejected')) {
-        errorMessage = 'Transaction was rejected. Please try again.';
+        errorMessage = 'Transaction was rejected by the wallet.';
       } else if (err.message?.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds in your wallet.';
       } else if (err.message?.includes('account sequence mismatch')) {
         errorMessage = 'Transaction sequence error. Please refresh and try again.';
       } else if (err.message?.includes('cannot be broadcasted')) {
-        errorMessage = 'Network error. Please check your connection and try again.';
+        errorMessage = 'Network error. Please check your connection.';
       } else if (err.message?.includes('timeout')) {
         errorMessage = 'Transaction timed out. The network might be congested.';
       } else if (err.message?.includes('out of gas')) {
@@ -145,9 +126,16 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
         errorMessage = err.message;
       }
       
+      // Update component state
       setError(errorMessage);
       setStatus('error');
-      onError && onError(err);
+      
+      // Call the onError callback if provided
+      onError && onError(err instanceof Error ? err : new Error(errorMessage));
+      
+      // Re-throw with improved message for the toast notification
+      throw new Error(errorMessage);
+    } finally {
       setLoading(false);
     }
   };
@@ -202,7 +190,7 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
                 <p className="text-xs text-green-400 font-mono break-all">{txHash}</p>
                 {txHash && (
                   <a 
-                    href={`https://explorer.burnt.com/xion-testnet-2/tx/${txHash}`} 
+                    href={getTransactionExplorerLink(txHash, true)} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="mt-2 text-xs text-blue-400 hover:text-blue-300 flex items-center justify-center gap-1"
@@ -223,23 +211,19 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
             </button>
           </div>
         ) : (
-          <button
-            className={`w-full ${status === 'processing' ? 'bg-slate-700' : 'bg-black hover:bg-slate-900'} text-white py-3.5 px-4 rounded-xl font-medium border border-white transition-all duration-300 shadow-md ${!loading ? 'hover:shadow-lg hover:translate-y-[-2px] active:translate-y-[1px]' : ''} flex items-center justify-center gap-2`}
-            onClick={handleCheckout}
-            disabled={loading || !client}
+          <TransactionToast 
+            onTransaction={handleCheckout}
+            pendingMessage="Processing your payment on XION..."
+            successMessage="Payment completed successfully!"
+            errorMessage="Payment failed:"
           >
-            {status === 'processing' ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              'Pay Now'
-            )}
-          </button>
+            <button
+              className="w-full bg-black hover:bg-slate-900 text-white py-3.5 px-4 rounded-xl font-medium border border-white transition-all duration-300 shadow-md hover:shadow-lg hover:translate-y-[-2px] active:translate-y-[1px] flex items-center justify-center gap-2"
+              disabled={!client || !account?.bech32Address}
+            >
+              {!client || !account?.bech32Address ? "Connect Wallet First" : "Pay Now"}
+            </button>
+          </TransactionToast>
         )}
 
         {error && (
