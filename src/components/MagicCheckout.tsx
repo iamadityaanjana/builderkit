@@ -142,58 +142,58 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] p-8">
-      <div className="w-full max-w-md bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700">
+      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
         
         {/* Logo & Title */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 bg-black border-2 border-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white" className="w-8 h-8">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-gray-600">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-gray-800">
             Magic Checkout
           </h1>
-          <p className="text-white text-sm mt-2 text-center">
+          <p className="text-gray-600 text-sm mt-2 text-center">
             Complete your payment seamlessly with XION
           </p>
         </div>
 
         {/* Product Details */}
-        <div className="bg-black border border-slate-700 rounded-xl p-4 mb-6">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
           <div className="flex justify-between mb-3">
-            <span className="text-white">Product ID:</span>
-            <span className="text-white font-mono">{productId}</span>
+            <span className="text-gray-600">Product ID:</span>
+            <span className="text-gray-800 font-mono">{productId}</span>
           </div>
           <div className="flex justify-between mb-3">
-            <span className="text-white">Amount:</span>
-            <span className="text-white font-bold">{amount} {currency}</span>
+            <span className="text-gray-600">Amount:</span>
+            <span className="text-gray-800 font-bold">{amount} {currency}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-white">Network Fee:</span>
-            <span className="text-green-400">Sponsored</span>
+            <span className="text-gray-600">Network Fee:</span>
+            <span className="text-green-600">Sponsored</span>
           </div>
         </div>
 
         {status === 'success' ? (
           <div className="space-y-4">
-            <div className="bg-green-900/30 p-4 rounded-xl border border-green-700">
+            <div className="bg-green-50 p-4 rounded-xl border border-green-200">
               <div className="flex items-center justify-center mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="text-white text-center">Payment successful!</p>
-              <p className="text-xs text-center text-slate-300 mt-1">Transaction has been confirmed on XION</p>
-              <div className="mt-3 pt-3 border-t border-green-700/50">
-                <p className="text-xs text-slate-300">Transaction Hash:</p>
-                <p className="text-xs text-green-400 font-mono break-all">{txHash}</p>
+              <p className="text-gray-800 text-center font-medium">Payment successful!</p>
+              <p className="text-xs text-center text-gray-600 mt-1">Transaction has been confirmed on XION</p>
+              <div className="mt-3 pt-3 border-t border-green-200">
+                <p className="text-xs text-gray-600">Transaction Hash:</p>
+                <p className="text-xs text-green-600 font-mono break-all">{txHash}</p>
                 {txHash && (
                   <a 
                     href={getTransactionExplorerLink(txHash, true)} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="mt-2 text-xs text-blue-400 hover:text-blue-300 flex items-center justify-center gap-1"
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1"
                   >
                     <span>View on Explorer</span>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,7 +204,7 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
               </div>
             </div>
             <button 
-              className="w-full bg-black hover:bg-slate-900 text-white py-3 px-4 rounded-xl font-medium border border-white transition-colors duration-300"
+              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-4 rounded-xl font-medium border border-gray-300 transition-colors duration-300"
               onClick={() => setStatus('idle')}
             >
               New Payment
@@ -218,7 +218,7 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
             errorMessage="Payment failed:"
           >
             <button
-              className="w-full bg-black hover:bg-slate-900 text-white py-3.5 px-4 rounded-xl font-medium border border-white transition-all duration-300 shadow-md hover:shadow-lg hover:translate-y-[-2px] active:translate-y-[1px] flex items-center justify-center gap-2"
+              className="w-full bg-gray-800 hover:bg-gray-900 text-white py-3.5 px-4 rounded-xl font-medium transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
               disabled={!client || !account?.bech32Address}
             >
               {!client || !account?.bech32Address ? "Connect Wallet First" : "Pay Now"}
@@ -227,18 +227,18 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
         )}
 
         {error && (
-          <div className="mt-4 p-3 bg-red-900/30 border border-red-800 rounded-lg">
-            <p className="text-red-400 text-sm">{error}</p>
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
           </div>
         )}
         
-        <div className="mt-6 pt-4 border-t border-slate-700 flex items-center justify-center gap-2">
-          <div className="w-4 h-4 bg-slate-700 rounded-full flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white" className="w-2 h-2">
+        <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-center gap-2">
+          <div className="w-4 h-4 bg-gray-200 rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-2 h-2 text-gray-600">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-xs text-slate-400">Powered by XION • Gasless transactions</p>
+          <p className="text-xs text-gray-500">Powered by XION • Gasless transactions</p>
         </div>
       </div>
     </div>

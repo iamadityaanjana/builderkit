@@ -23,24 +23,24 @@ export const CheckoutPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <header className="p-4 border-b border-slate-800">
+    <div className="min-h-screen bg-gray-50">
+      <header className="p-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="text-white font-bold text-lg">XION Demo</div>
+          <div className="text-gray-800 font-bold text-lg">Xion Builder Kit Demo</div>
           <nav>
             <ul className="flex gap-6">
               <li>
-                <Link to="/" className="text-slate-300 hover:text-white transition-colors">
+                <Link to="/" className="text-gray-600 hover:text-gray-800 transition-colors">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/checkout" className="text-white font-medium">
+                <Link to="/checkout" className="text-gray-800 font-medium">
                   Checkout
                 </Link>
               </li>
               <li>
-                <Link to="/nft-access" className="text-slate-300 hover:text-white transition-colors">
+                <Link to="/nft-access" className="text-gray-600 hover:text-gray-800 transition-colors">
                   NFT Access
                 </Link>
               </li>
@@ -52,19 +52,19 @@ export const CheckoutPage: React.FC = () => {
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
           {/* Product Info Column */}
-          <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
-            <h2 className="text-2xl text-white font-bold mb-4">{productInfo.name}</h2>
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            <h2 className="text-2xl text-gray-800 font-bold mb-4">{productInfo.name}</h2>
             <div className="mb-6 rounded-xl overflow-hidden">
               <img src={productInfo.imageUrl} alt={productInfo.name} className="w-full h-auto" />
             </div>
             <div className="mb-4">
-              <h3 className="text-lg text-white mb-2">Description</h3>
-              <p className="text-slate-300">{productInfo.description}</p>
+              <h3 className="text-lg text-gray-800 mb-2">Description</h3>
+              <p className="text-gray-600">{productInfo.description}</p>
             </div>
-            <div className="pt-4 border-t border-slate-700">
+            <div className="pt-4 border-t border-gray-200">
               <div className="flex justify-between items-center">
-                <span className="text-slate-300">Price:</span>
-                <span className="text-white font-bold text-xl">{productInfo.amount} {productInfo.currency}</span>
+                <span className="text-gray-600">Price:</span>
+                <span className="text-gray-800 font-bold text-xl">{productInfo.amount} {productInfo.currency}</span>
               </div>
             </div>
           </div>

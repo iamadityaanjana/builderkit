@@ -46,24 +46,24 @@ export const NFTGatedPage: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen bg-slate-950">
-      <header className="p-4 border-b border-slate-800">
+    <div className="min-h-screen bg-gray-50">
+      <header className="p-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="text-white font-bold text-lg">XION Demo</div>
+          <div className="text-gray-800 font-bold text-lg">Xion Builder Kit Demo</div>
           <nav>
             <ul className="flex gap-6">
               <li>
-                <Link to="/" className="text-slate-300 hover:text-white transition-colors">
+                <Link to="/" className="text-gray-600 hover:text-gray-800 transition-colors">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/checkout" className="text-slate-300 hover:text-white transition-colors">
+                <Link to="/checkout" className="text-gray-600 hover:text-gray-800 transition-colors">
                   Checkout
                 </Link>
               </li>
               <li>
-                <Link to="/nft-access" className="text-white font-medium">
+                <Link to="/nft-access" className="text-gray-800 font-medium">
                   NFT Access
                 </Link>
               </li>
@@ -73,27 +73,27 @@ export const NFTGatedPage: React.FC = () => {
       </header>
 
       <div className="container mx-auto py-16 px-4">
-        <h1 className="text-4xl font-bold text-white mb-8 text-center">NFT-Gated Content Demo</h1>
+        <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">NFT-Gated Content Demo</h1>
         
         <div className="max-w-3xl mx-auto mt-12">
-          <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 mb-8">
-            <h2 className="text-2xl font-bold text-white mb-4">How It Works</h2>
-            <p className="text-slate-300 mb-4">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">How It Works</h2>
+            <p className="text-gray-600 mb-4">
               This page demonstrates token-gated content using NFTs on the XION blockchain. 
               Only users who own a specific NFT will be able to see the protected content below.
             </p>
             
-            <div className="bg-slate-800 p-4 rounded-lg mb-6">
-              <p className="text-sm text-slate-300 mb-1"><strong>Contract Address:</strong></p>
-              <p className="text-sm text-slate-400 font-mono break-all mb-3">{demoNftContractAddress}</p>
+            <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-100">
+              <p className="text-sm text-gray-700 mb-1 font-medium">Contract Address:</p>
+              <p className="text-sm text-gray-500 font-mono break-all mb-3">{demoNftContractAddress}</p>
               
-              <p className="text-sm text-slate-300 mb-1"><strong>Token ID Required:</strong></p>
-              <p className="text-sm text-slate-400 font-mono">{demoTokenId}</p>
+              <p className="text-sm text-gray-700 mb-1 font-medium">Token ID Required:</p>
+              <p className="text-sm text-gray-500 font-mono">{demoTokenId}</p>
             </div>
             
             <div className="flex justify-end">
               <button
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-sm transition-colors"
                 onClick={checkNFTOwnership}
               >
                 Verify NFT Contract
@@ -101,21 +101,21 @@ export const NFTGatedPage: React.FC = () => {
             </div>
             
             {debugInfo.contractInfo && (
-              <div className="mt-4 p-3 rounded-lg bg-green-900/30 border border-green-800">
-                <p className="text-green-300 text-sm">✅ Contract found on XION testnet</p>
+              <div className="mt-4 p-3 rounded-lg bg-green-50 border border-green-200">
+                <p className="text-green-700 text-sm">✅ Contract found on XION testnet</p>
               </div>
             )}
             
             {debugInfo.error && (
-              <div className="mt-4 p-3 rounded-lg bg-red-900/30 border border-red-800">
-                <p className="text-red-300 text-sm">{debugInfo.error}</p>
+              <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-red-700 text-sm">{debugInfo.error}</p>
               </div>
             )}
           </div>
           
           {/* NFT-gated content */}
           <NFTAccess nftContractAddress={demoNftContractAddress} tokenId={demoTokenId}>
-            <div className="bg-gradient-to-br from-blue-900 to-purple-900 p-8 rounded-xl border border-blue-500">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-8 rounded-xl border border-blue-200">
               <div className="flex justify-center mb-6">
                 <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -123,13 +123,13 @@ export const NFTGatedPage: React.FC = () => {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-white text-center mb-4">Exclusive NFT Holder Content</h3>
-              <p className="text-blue-200 mb-6 text-center">
+              <h3 className="text-2xl font-bold text-gray-800 text-center mb-4">Exclusive NFT Holder Content</h3>
+              <p className="text-blue-700 mb-6 text-center">
                 Congratulations! You've successfully accessed this content because you own an NFT from our collection.
               </p>
-              <div className="bg-blue-900/50 p-6 rounded-lg">
-                <h4 className="text-lg font-bold text-white mb-3">Premium Benefits</h4>
-                <ul className="list-disc pl-6 text-blue-200 space-y-2">
+              <div className="bg-white/70 p-6 rounded-lg border border-blue-200">
+                <h4 className="text-lg font-bold text-gray-800 mb-3">Premium Benefits</h4>
+                <ul className="list-disc pl-6 text-blue-700 space-y-2">
                   <li>Access to members-only events</li>
                   <li>Exclusive discounts on products</li>
                   <li>Early access to new features</li>

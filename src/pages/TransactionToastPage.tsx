@@ -64,7 +64,7 @@ export const TransactionToastPage: React.FC = () => {
     <div className="min-h-screen bg-slate-950">
       <header className="p-4 border-b border-slate-800">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="text-white font-bold text-lg">XION Demo</div>
+          <div className="text-white font-bold text-lg">Xion Builder Kit Demo</div>
           <nav>
             <ul className="flex gap-6">
               <li>

@@ -1,86 +1,72 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAbstraxionAccount, useModal } from '@burnt-labs/abstraxion';
 import "@burnt-labs/abstraxion/dist/index.css";
 import "@burnt-labs/ui/dist/index.css";
-
-
+import XionLogo from '../assets/Xion-Logo-Black.svg';
 
 export const XionLogin: React.FC = () => {
-  const { data: account, login, logout, isConnected } = useAbstraxionAccount();
+  const { data: account, logout, isConnected } = useAbstraxionAccount();
   const [, setShowModal] = useModal();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] p-8">
-      <div className="w-full max-w-md bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <div className="w-full max-w-sm bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
         
-        {/* Logo & Title */}
+        {/* Logo & Title Section */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 bg-black border-2 border-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white" className="w-8 h-8">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-            </svg>
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <img src={XionLogo} alt="XION" className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-white">
-            XION Authentication
+          <h1 className="text-2xl font-semibold text-gray-800 mb-2">
+            Create an account
           </h1>
-          <p className="text-white text-sm mt-2 text-center">
-            {!isConnected ? 'Connect to access your XION smart wallet' : 'Your XION smart wallet is connected'}
+          <p className="text-gray-500 text-sm text-center">
+            Please enter your details to create an account.
           </p>
         </div>
         
         {!isConnected ? (
-          <div className="space-y-6">
-            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-semibold text-white">Secure & Gasless</h3>
-              </div>
-              <p className="text-xs text-slate-400">
-                Enjoy a Web2-like experience with full Web3 capabilities and no gas fees
-              </p>
-            </div>
-            
+          <div className="space-y-4">
             <button
               onClick={() => setShowModal(true)}
-              className="w-full bg-black text-white py-3.5 px-4 rounded-xl font-medium border border-white transition-all duration-300 shadow-md hover:shadow-lg hover:bg-slate-900 active:translate-y-[1px]"
+              className="w-full bg-gray-800 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
             >
-              Connect with XION
+              Continue with XION
             </button>
+            
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Already have an account?{' '}
+              <span className="font-medium text-gray-800 underline cursor-pointer hover:text-gray-600">
+                Sign in
+              </span>
+            </p>
           </div>
         ) : (
-          <div className="space-y-6 text-white">
-            <div className="p-4 rounded-xl bg-black border border-slate-600">
+          <div className="space-y-6">
+            <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-white">Wallet Address</h3>
-                <div className="w-6 h-6 bg-black border border-gray-600 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                </div>
+                <h3 className="text-sm font-medium text-gray-700">Connected Wallet</h3>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               </div>
               
-              <p className="font-mono text-xs break-all bg-slate-900 p-3 rounded-lg border border-slate-700 text-white">
+              <p className="font-mono text-xs break-all bg-white p-3 rounded-md border border-gray-200 text-gray-600">
                 {account?.bech32Address}
               </p>
               
-              <div className="mt-3 flex items-center gap-2">
-                <div className="w-10 h-10 bg-black border border-gray-600 rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <p className="text-sm text-white">Gasless transactions enabled</p>
+              <div className="mt-3 flex items-center gap-2 text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <p className="text-sm">Gasless transactions enabled</p>
               </div>
             </div>
             
             <button
               onClick={logout}
-              className="w-full bg-black hover:bg-slate-900  py-3 px-4 rounded-xl font-medium border border-white transition-colors duration-300 flex items-center justify-center gap-2 text-white"
+              className="w-full bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-all duration-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 flex items-center justify-center gap-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H3" />
               </svg>
               Disconnect
             </button>

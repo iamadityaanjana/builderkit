@@ -43,7 +43,7 @@ export const TransactionToast: React.FC<TransactionToastProps> = ({
       {
         pending: {
           render: () => pendingMessage,
-          icon: "🔄",
+          icon: "🔄" ,
           ...(toastOptions || {})
         },
         success: {
