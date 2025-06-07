@@ -5,23 +5,25 @@ import "@burnt-labs/ui/dist/index.css";
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import config from './config';
+import Navigation from './components/Navigation';
 import { LoginPage } from './pages/LoginPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { NFTGatedPage } from './pages/NFTGatedPage';
 import { TransactionToastPage } from './pages/TransactionToastPage';
+import SmartProfilePage from './pages/SmartProfilePage';
 
 function App() {
 
   // Define your AbstraxionConfig object here
-  const config = {
-   rpcUrl: "https://rpc.xion-testnet-2.burnt.com:443",
-    restUrl: "https://api.xion-testnet-2.burnt.com",
-    treasury: "xion1sg8jwhl26l3flsa6w84w5eq3dttvd676tcqgrv0kjkmuyaplnkyqsg7lf2", // Added treasury address
-     // Added contract address for user grants
+  const abstraxionConfig = {
+    rpcUrl: config.rpcUrl,
+    restUrl: config.restUrl,
+    treasury: config.treasuryAddress
   };
 
   return (
-    <AbstraxionProvider config={config}>
+    <AbstraxionProvider config={abstraxionConfig}>
       <Abstraxion onClose={() => {}} />
       <ToastContainer 
         position="top-right"
@@ -36,11 +38,13 @@ function App() {
         theme="dark"
       />
       <BrowserRouter>
+        <Navigation />
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/nft-access" element={<NFTGatedPage />} />
           <Route path="/transaction-toast" element={<TransactionToastPage />} />
+          <Route path="/smart-profile" element={<SmartProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
