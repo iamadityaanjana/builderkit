@@ -63,6 +63,16 @@ export const Navigation: React.FC = () => {
             >
               Paywall
             </Link>
+            <Link
+              to="/referral"
+              className={`${
+                isActive('/referral') 
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-600 hover:text-gray-800'
+              } transition-colors py-2 px-1`}
+            >
+              Referral
+            </Link>
           </div>
         </div>
       </div>

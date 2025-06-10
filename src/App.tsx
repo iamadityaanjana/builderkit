@@ -13,6 +13,7 @@ import { NFTGatedPage } from './pages/NFTGatedPage';
 import { TransactionToastPage } from './pages/TransactionToastPage';
 import SmartProfilePage from './pages/SmartProfilePage';
 import PaywallPage from './pages/PaywallPage';
+import ReferralFlowPage from './pages/ReferralFlowPage';
 
 function App() {
 
@@ -47,6 +48,7 @@ function App() {
           <Route path="/transaction-toast" element={<TransactionToastPage />} />
           <Route path="/smart-profile" element={<SmartProfilePage />} />
           <Route path="/paywall" element={<PaywallPage />} />
+          <Route path="/referral" element={<ReferralFlowPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
