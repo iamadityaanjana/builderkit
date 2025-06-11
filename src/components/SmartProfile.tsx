@@ -1,16 +1,52 @@
-import React, { useEffect, useState, useRef } from 'react';
+/**
+ * SmartProfile Component
+ * 
+ * A minimal, customizable user profile component that stores data on-chain using XION User Map.
+ * Features pure CSS styling and supports unlimited custom fields.
+ * 
+ * Props:
+ * - customFields: Array of field configurations to add to the profile
+ * - loginPromptComponent: Custom component to show when wallet is not connected
+ * 
+ * Custom Field Types:
+ * - text: Regular text input
+ * - textarea: Multi-line text input  
+ * - url: URL input with validation
+ * - email: Email input with validation
+ * 
+ * Example Usage:
+ * ```tsx
+ * const customFields = [
+ *   { key: 'bio', label: 'Bio', type: 'textarea', placeholder: 'Tell us about yourself...', required: false },
+ *   { key: 'age', label: 'Age', type: 'text', placeholder: 'Your age', required: false },
+ *   { key: 'website', label: 'Website', type: 'url', placeholder: 'https://yoursite.com', required: false }
+ * ];
+ * 
+ * <SmartProfile customFields={customFields} />
+ * ```
+ */
+import React, { useEffect, useState } from 'react';
 import { useAbstraxionAccount, useAbstraxionSigningClient, useAbstraxionClient } from '@burnt-labs/abstraxion';
+import { toast } from 'react-toastify';
 import config from '../config';
+
+// Types for custom field configuration
+interface CustomField {
+  key: string;
+  label: string;
+  type: 'text' | 'url' | 'email' | 'textarea';
+  placeholder?: string;
+  required?: boolean;
+}
 
 // Types for user profile data
 type UserProfile = {
   avatarUrl: string;
   name: string;
   socials: {
-    twitter?: string;
-    github?: string;
     [key: string]: string | undefined;
   };
+  [key: string]: any; // Allow custom fields
 };
 
 // Default profile when no data is available
@@ -20,7 +56,15 @@ const DEFAULT_PROFILE: UserProfile = {
   socials: {}
 };
 
-export const SmartProfile: React.FC = () => {
+interface SmartProfileProps {
+  customFields?: CustomField[];
+  loginPromptComponent?: React.ReactNode;
+}
+
+export const SmartProfile: React.FC<SmartProfileProps> = ({
+  customFields = [],
+  loginPromptComponent
+}) => {
   // Get wallet address and client from XION hooks
   const { data: account } = useAbstraxionAccount();
   const { client } = useAbstraxionSigningClient();
@@ -60,10 +104,24 @@ export const SmartProfile: React.FC = () => {
 
         if (response) {
           try {
-            // Parse the JSON response
-            const parsedProfile = JSON.parse(response);
-            setProfile(parsedProfile);
-            setEditableProfile(parsedProfile);
+            // Handle different response formats
+            let responseValue;
+            if (typeof response === 'string') {
+              responseValue = response;
+            } else if (response?.value) {
+              responseValue = response.value;
+            } else if (response?.data) {
+              responseValue = response.data;
+            }
+
+            if (responseValue) {
+              const parsedProfile = JSON.parse(responseValue);
+              setProfile(parsedProfile);
+              setEditableProfile(parsedProfile);
+            } else {
+              setProfile(DEFAULT_PROFILE);
+              setEditableProfile(DEFAULT_PROFILE);
+            }
           } catch (e) {
             console.error("Failed to parse profile JSON:", e);
             setProfile(DEFAULT_PROFILE);
@@ -100,7 +158,6 @@ export const SmartProfile: React.FC = () => {
     
     // Validate the profile data first
     if (!validateProfile()) {
-      // Error is already set by validateProfile
       return;
     }
     
@@ -139,10 +196,13 @@ export const SmartProfile: React.FC = () => {
         setProfile(editableProfile);
         setIsEditing(false);
         console.log("Profile updated successfully:", result);
+        toast.success("Profile updated successfully!");
       }
     } catch (e) {
       console.error("Failed to update profile:", e);
-      setError("Failed to save profile data: " + (e instanceof Error ? e.message : String(e)));
+      const errorMessage = "Failed to save profile data: " + (e instanceof Error ? e.message : String(e));
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -164,7 +224,34 @@ export const SmartProfile: React.FC = () => {
       return false;
     }
     
-    // Validate social links - make sure all have platform names and URLs
+    // Validate custom fields
+    for (const field of customFields) {
+      if (field.required && !editableProfile[field.key]?.trim()) {
+        setError(`${field.label} is required`);
+        return false;
+      }
+      
+      // Validate URL fields
+      if (field.type === 'url' && editableProfile[field.key]?.trim()) {
+        try {
+          new URL(editableProfile[field.key]);
+        } catch (e) {
+          setError(`${field.label} must be a valid URL`);
+          return false;
+        }
+      }
+      
+      // Validate email fields
+      if (field.type === 'email' && editableProfile[field.key]?.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(editableProfile[field.key])) {
+          setError(`${field.label} must be a valid email address`);
+          return false;
+        }
+      }
+    }
+    
+    // Validate social links
     const socials = editableProfile.socials || {};
     for (const [platform, url] of Object.entries(socials)) {
       if (!platform?.trim()) {
@@ -189,236 +276,642 @@ export const SmartProfile: React.FC = () => {
     return true;
   };
 
-  if (!walletAddress) {
-    return (
-      <div className="max-w-md p-6 mx-auto bg-white rounded-lg shadow-md">
-        <p className="text-center text-gray-600">Please connect your wallet to view your profile</p>
+  // Default login prompt with minimal design
+  const defaultLoginPrompt = (
+    <div style={{
+      backgroundColor: '#ffffff',
+      padding: '24px',
+      borderRadius: '8px',
+      border: '1px solid #e5e7eb',
+      maxWidth: '320px',
+      margin: '0 auto',
+      textAlign: 'center' as const,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      <div style={{
+        width: '40px',
+        height: '40px',
+        backgroundColor: '#000000',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '0 auto 12px'
+      }}>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="#ffffff">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+        </svg>
       </div>
-    );
+      <h2 style={{
+        fontSize: '16px',
+        fontWeight: '600',
+        color: '#000000',
+        margin: '0 0 8px'
+      }}>Connect Wallet</h2>
+      <p style={{
+        fontSize: '14px',
+        color: '#666666',
+        margin: '0',
+        lineHeight: '1.4'
+      }}>
+        Connect your wallet to view your profile
+      </p>
+    </div>
+  );
+
+  if (!walletAddress) {
+    return <>{loginPromptComponent || defaultLoginPrompt}</>;
   }
 
   if (loading && !profile) {
     return (
-      <div className="max-w-md p-6 mx-auto bg-white rounded-lg shadow-md">
-        <p className="text-center text-gray-600">Loading profile...</p>
+      <div style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '8px',
+        maxWidth: '320px',
+        margin: '0 auto',
+        padding: '20px',
+        textAlign: 'center' as const,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      }}>
+        <div style={{
+          width: '16px',
+          height: '16px',
+          border: '2px solid #f3f4f6',
+          borderTop: '2px solid #000000',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto 12px'
+        }}></div>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        <p style={{
+          color: '#666666',
+          fontSize: '14px',
+          margin: '0'
+        }}>Loading profile...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md p-6 mx-auto bg-white rounded-lg shadow-md">
-      {error && (
-        <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
-          {error}
-        </div>
-      )}
+    <div style={{
+      backgroundColor: '#ffffff',
+      border: '1px solid #e5e7eb',
+      borderRadius: '8px',
+      maxWidth: '320px',
+      margin: '0 auto',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontSize: '14px',
+      lineHeight: '1.4'
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '16px 20px',
+        borderBottom: '1px solid #f3f4f6'
+      }}>
+        <h2 style={{
+          fontSize: '16px',
+          fontWeight: '600',
+          color: '#000000',
+          margin: '0',
+          textAlign: 'center' as const
+        }}>User Profile</h2>
+      </div>
 
-      {!isEditing ? (
-        // Read-only profile view
-        <div className="profile-view-container bg-white p-4 rounded-lg">
-          <div className="flex flex-col items-center">
-            <img 
-              src={profile?.avatarUrl || DEFAULT_PROFILE.avatarUrl} 
-              alt="Profile" 
-              className="w-24 h-24 rounded-full mb-4 object-cover border-2 border-gray-200"
-            />
-            <h2 className="text-xl font-semibold mb-2">
-              {profile?.name || DEFAULT_PROFILE.name}
-            </h2>
-            <p className="text-sm text-gray-500 mb-4">
-              {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
-            </p>
+      {/* Content */}
+      <div style={{ padding: '20px' }}>
+        {error && (
+          <div style={{
+            padding: '12px',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '6px',
+            marginBottom: '16px'
+          }}>
+            <p style={{
+              color: '#dc2626',
+              fontSize: '12px',
+              margin: '0'
+            }}>{error}</p>
           </div>
+        )}
 
-          {profile?.socials && Object.keys(profile.socials).length > 0 && (
-            <div className="mt-4">
-              <h3 className="font-medium text-gray-700 mb-2">Social Links</h3>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {Object.entries(profile.socials).map(([platform, link], index) => (
-                  link ? (
-                    <a 
-                      key={index} 
-                      href={link} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm"
-                    >
-                      {platform}
-                    </a>
-                  ) : null
-                ))}
+        {!isEditing ? (
+          // Profile View
+          <div>
+            {/* Avatar and Basic Info */}
+            <div style={{
+              textAlign: 'center' as const,
+              marginBottom: '16px'
+            }}>
+              <img 
+                src={profile?.avatarUrl || DEFAULT_PROFILE.avatarUrl} 
+                alt="Profile" 
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  objectFit: 'cover' as const,
+                  border: '2px solid #e5e7eb',
+                  marginBottom: '8px',
+                  display: 'block',
+                  margin: '0 auto 8px auto'
+                }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = DEFAULT_PROFILE.avatarUrl;
+                }}
+              />
+              <div style={{
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#000000',
+                marginBottom: '4px'
+              }}>
+                {profile?.name || DEFAULT_PROFILE.name}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                color: '#666666'
+              }}>
+                {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
               </div>
             </div>
-          )}
 
-          <div className="mt-6 flex justify-center">
+            {/* Custom Fields */}
+            {customFields.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                {customFields.map((field) => {
+                  const value = profile?.[field.key];
+                  if (!value) return null;
+                  
+                  return (
+                    <div key={field.key} style={{ marginBottom: '8px' }}>
+                      <div style={{
+                        fontSize: '11px',
+                        color: '#666666',
+                        marginBottom: '2px'
+                      }}>
+                        {field.label}
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#000000',
+                        backgroundColor: '#f8f9fa',
+                        padding: '6px 8px',
+                        borderRadius: '4px',
+                        wordBreak: field.type === 'textarea' ? 'break-word' as const : 'break-all' as const
+                      }}>
+                        {field.type === 'url' ? (
+                          <a 
+                            href={value} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{
+                              color: '#000000',
+                              textDecoration: 'none'
+                            }}
+                          >
+                            {value}
+                          </a>
+                        ) : field.type === 'email' ? (
+                          <a 
+                            href={`mailto:${value}`}
+                            style={{
+                              color: '#000000',
+                              textDecoration: 'none'
+                            }}
+                          >
+                            {value}
+                          </a>
+                        ) : (
+                          value
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Social Links */}
+            {profile?.socials && Object.keys(profile.socials).length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{
+                  fontSize: '12px',
+                  color: '#666666',
+                  marginBottom: '8px'
+                }}>Social Links</div>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap' as const,
+                  gap: '6px'
+                }}>
+                  {Object.entries(profile.socials).map(([platform, link], index) => (
+                    link ? (
+                      <a 
+                        key={index} 
+                        href={link} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        style={{
+                          padding: '4px 8px',
+                          backgroundColor: '#f3f4f6',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          color: '#000000',
+                          textDecoration: 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#e5e7eb';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        }}
+                      >
+                        {platform}
+                      </a>
+                    ) : null
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Edit Button */}
             <button 
               onClick={() => {
                 console.log("Edit Profile button clicked");
                 setIsEditing(true);
-                // The useEffect will update the textarea content
+                if (profile) {
+                  setEditableProfile(profile);
+                }
               }}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+              style={{
+                width: '100%',
+                padding: '10px',
+                backgroundColor: '#000000',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#333333';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#000000';
+              }}
             >
               Edit Profile
             </button>
           </div>
-        </div>
-      ) : (
-        // User-friendly form with input fields
-        <div className="edit-profile-form space-y-5 bg-white p-4 rounded-lg border border-blue-200">
-          <h3 className="text-lg font-semibold text-blue-800 mb-4">Edit Your Profile</h3>
-          
-          {/* Basic Profile Info */}
-          <div className="space-y-4">
+        ) : (
+          // Edit Form
+          <div>
             {/* Name Field */}
-            <div>
-              <label htmlFor="profile-name" className="block text-sm font-medium text-gray-700 mb-1">
-                Display Name
-              </label>
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{
+                fontSize: '12px',
+                color: '#666666',
+                marginBottom: '4px'
+              }}>Display Name</div>
               <input
-                id="profile-name"
                 type="text"
                 value={editableProfile.name}
                 onChange={(e) => setEditableProfile({...editableProfile, name: e.target.value})}
-                className="w-full p-2 border rounded focus:ring focus:ring-opacity-50 focus:ring-blue-500"
                 placeholder="Your Name"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  outline: 'none',
+                  boxSizing: 'border-box' as const
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#000000';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#d1d5db';
+                }}
               />
             </div>
-            
+
             {/* Avatar URL */}
-            <div>
-              <label htmlFor="profile-avatar" className="block text-sm font-medium text-gray-700 mb-1">
-                Profile Image URL
-              </label>
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0">
-                  <img 
-                    src={editableProfile.avatarUrl || 'https://via.placeholder.com/40'} 
-                    alt="Avatar Preview"
-                    className="w-10 h-10 rounded-full object-cover border"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40';
-                    }}
-                  />
-                </div>
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{
+                fontSize: '12px',
+                color: '#666666',
+                marginBottom: '4px'
+              }}>Profile Image URL</div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <img 
+                  src={editableProfile.avatarUrl || DEFAULT_PROFILE.avatarUrl} 
+                  alt="Avatar Preview"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    objectFit: 'cover' as const,
+                    border: '1px solid #d1d5db',
+                    flexShrink: 0
+                  }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = DEFAULT_PROFILE.avatarUrl;
+                  }}
+                />
                 <input
-                  id="profile-avatar"
                   type="text"
                   value={editableProfile.avatarUrl}
                   onChange={(e) => setEditableProfile({...editableProfile, avatarUrl: e.target.value})}
-                  className="flex-grow p-2 border rounded focus:ring focus:ring-opacity-50 focus:ring-blue-500"
                   placeholder="https://example.com/avatar.jpg"
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    outline: 'none'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#000000';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#d1d5db';
+                  }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Enter the URL to your profile image. Preview shown to the left.
-              </p>
             </div>
-          </div>
-          
-          {/* Social Links Section */}
-          <div className="pt-2">
-            <h4 className="font-medium text-gray-700 mb-3">Social Links</h4>
-            
-            {/* Existing Social Links */}
-            {Object.entries(editableProfile.socials || {}).map(([platform, url], index) => (
-              <div key={index} className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
-                  value={platform}
-                  onChange={(e) => {
-                    const newSocials = {...editableProfile.socials};
-                    delete newSocials[platform];
-                    newSocials[e.target.value] = url;
-                    setEditableProfile({...editableProfile, socials: newSocials});
-                  }}
-                  className="w-1/3 p-2 border rounded focus:ring focus:ring-blue-500"
-                  placeholder="Platform name"
-                />
-                <input
-                  type="text"
-                  value={url as string}
-                  onChange={(e) => {
-                    const newSocials = {...editableProfile.socials};
-                    newSocials[platform] = e.target.value;
-                    setEditableProfile({...editableProfile, socials: newSocials});
-                  }}
-                  className="flex-grow p-2 border rounded focus:ring focus:ring-blue-500"
-                  placeholder="https://..."
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newSocials = {...editableProfile.socials};
-                    delete newSocials[platform];
-                    setEditableProfile({...editableProfile, socials: newSocials});
-                  }}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded"
-                  title="Remove social link"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
+
+            {/* Custom Fields */}
+            {customFields.map((field) => (
+              <div key={field.key} style={{ marginBottom: '12px' }}>
+                <div style={{
+                  fontSize: '12px',
+                  color: '#666666',
+                  marginBottom: '4px'
+                }}>
+                  {field.label}{field.required && ' *'}
+                </div>
+                {field.type === 'textarea' ? (
+                  <textarea
+                    value={editableProfile[field.key] || ''}
+                    onChange={(e) => setEditableProfile({...editableProfile, [field.key]: e.target.value})}
+                    placeholder={field.placeholder}
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      outline: 'none',
+                      resize: 'vertical' as const,
+                      boxSizing: 'border-box' as const
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#000000';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                    }}
+                  />
+                ) : (
+                  <input
+                    type={field.type}
+                    value={editableProfile[field.key] || ''}
+                    onChange={(e) => setEditableProfile({...editableProfile, [field.key]: e.target.value})}
+                    placeholder={field.placeholder}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      outline: 'none',
+                      boxSizing: 'border-box' as const
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#000000';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                    }}
+                  />
+                )}
               </div>
             ))}
-            
-            {/* Add New Social Link Button */}
-            <button
-              type="button"
-              onClick={() => {
-                const newSocials = {...editableProfile.socials};
-                newSocials[`platform${Object.keys(newSocials).length + 1}`] = '';
-                setEditableProfile({...editableProfile, socials: newSocials});
-              }}
-              className="mt-2 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Add Social Link
-            </button>
-          </div>
-          
-          <div className="bg-blue-50 p-3 rounded text-sm">
-            <h4 className="font-medium text-blue-800">Profile Tips</h4>
-            <ul className="list-disc list-inside text-blue-600 space-y-1 mt-1">
-              <li>Add a clear profile picture for better recognition</li>
-              <li>Use your preferred display name</li>
-              <li>Add social links where people can find you</li>
-            </ul>
-          </div>
 
-          <div className="flex gap-3 mt-8">
-            <button
-              type="button"
-              onClick={() => {
-                console.log("Cancel button clicked");
-                setIsEditing(false);
-                setEditableProfile(profile || DEFAULT_PROFILE);
-                setError(null); // Clear any errors when canceling
-              }}
-              className="w-1/2 border border-gray-300 bg-white text-gray-700 py-2 px-4 rounded hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                console.log("Save Profile button clicked");
-                saveProfile();
-              }}
-              className="w-1/2 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-400"
-              disabled={loading}
-            >
-              {loading ? 'Saving...' : 'Save Profile'}
-            </button>
+            {/* Social Links */}
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{
+                fontSize: '12px',
+                color: '#666666',
+                marginBottom: '8px'
+              }}>Social Links</div>
+              
+              {/* Existing Social Links */}
+              {Object.entries(editableProfile.socials || {}).map(([platform, url], index) => (
+                <div key={index} style={{
+                  display: 'flex',
+                  gap: '6px',
+                  marginBottom: '6px'
+                }}>
+                  <input
+                    type="text"
+                    value={platform}
+                    onChange={(e) => {
+                      const newSocials = {...editableProfile.socials};
+                      delete newSocials[platform];
+                      newSocials[e.target.value] = url;
+                      setEditableProfile({...editableProfile, socials: newSocials});
+                    }}
+                    placeholder="Platform"
+                    style={{
+                      flex: '0 0 80px',
+                      padding: '6px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#000000';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                    }}
+                  />
+                  <input
+                    type="text"
+                    value={url as string}
+                    onChange={(e) => {
+                      const newSocials = {...editableProfile.socials};
+                      newSocials[platform] = e.target.value;
+                      setEditableProfile({...editableProfile, socials: newSocials});
+                    }}
+                    placeholder="https://..."
+                    style={{
+                      flex: 1,
+                      padding: '6px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#000000';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const newSocials = {...editableProfile.socials};
+                      delete newSocials[platform];
+                      setEditableProfile({...editableProfile, socials: newSocials});
+                    }}
+                    style={{
+                      padding: '6px',
+                      backgroundColor: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      borderRadius: '4px',
+                      color: '#dc2626',
+                      cursor: 'pointer',
+                      fontSize: '11px'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              
+              {/* Add Social Link */}
+              <button
+                onClick={() => {
+                  const newSocials = {...editableProfile.socials};
+                  const newKey = `platform${Object.keys(newSocials).length + 1}`;
+                  newSocials[newKey] = '';
+                  setEditableProfile({...editableProfile, socials: newSocials});
+                }}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '4px',
+                  color: '#666666',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  marginTop: '4px'
+                }}
+              >
+                + Add Social
+              </button>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              marginTop: '16px'
+            }}>
+              <button
+                onClick={() => {
+                  console.log("Cancel button clicked");
+                  setIsEditing(false);
+                  setEditableProfile(profile || DEFAULT_PROFILE);
+                  setError(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: '#f3f4f6',
+                  color: '#666666',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#e5e7eb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  console.log("Save Profile button clicked");
+                  saveProfile();
+                }}
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: loading ? '#f3f4f6' : '#000000',
+                  color: loading ? '#666666' : '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.backgroundColor = '#333333';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.backgroundColor = '#000000';
+                  }
+                }}
+              >
+                {loading ? (
+                  <>
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      border: '2px solid #cccccc',
+                      borderTop: '2px solid #666666',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                      marginRight: '6px'
+                    }}></div>
+                    Saving...
+                  </>
+                ) : (
+                  'Save'
+                )}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
