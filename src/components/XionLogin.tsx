@@ -9,36 +9,110 @@ export const XionLogin: React.FC = () => {
   const [, setShowModal] = useModal();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="w-full max-w-sm bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+    <div 
+      className="flex flex-col items-center justify-center min-h-screen bg-white p-4"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        backgroundColor: 'white',
+        padding: '16px'
+      }}
+    >
+      <div 
+        className="w-full max-w-lg bg-white p-12 rounded-3xl border-4 border-black"
+        style={{
+          width: '100%',
+          maxWidth: '32rem',
+          backgroundColor: 'white',
+          padding: '48px',
+          borderRadius: '24px',
+          border: '4px solid black'
+        }}
+      >
         
         {/* Logo & Title Section */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <img src={XionLogo} alt="XION" className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-semibold text-gray-800 mb-2">
-            Create an account
+        <div 
+          className="flex flex-col items-center mb-12"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginBottom: '48px'
+          }}
+        >
+          <img 
+            src={XionLogo} 
+            alt="XION" 
+            className="w-20 h-20 mb-8"
+            style={{
+              width: '160px',
+              height: '80px',
+              marginBottom: '10px'
+            }}
+          />
+          <h1 
+            className="text-4xl font-bold text-black text-center leading-tight"
+            style={{
+              fontSize: '32px',
+              fontWeight: 'bold',
+              color: 'black',
+              textAlign: 'center',
+              lineHeight: '1.25',
+              margin: 0
+            }}
+          >
+            Welcome to XionBuilder Kit
           </h1>
-          <p className="text-gray-500 text-sm text-center">
-            Please enter your details to create an account.
-          </p>
         </div>
         
         {!isConnected ? (
-          <div className="space-y-4">
+          <div 
+            className="space-y-8"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '32px'
+            }}
+          >
             <button
               onClick={() => setShowModal(true)}
-              className="w-full bg-gray-800 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+              className="w-full bg-black text-white py-4 px-8 rounded-xl text-xl font-medium transition-all duration-200 hover:bg-gray-900"
+              style={{
+                width: '100%',
+                backgroundColor: 'black',
+                color: 'white',
+                padding: '16px 32px',
+                borderRadius: '12px',
+                fontSize: '20px',
+                fontWeight: '500',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
             >
-              Continue with XION
+              Login with Xion
             </button>
             
-            <p className="text-center text-sm text-gray-500 mt-6">
-              Already have an account?{' '}
-              <span className="font-medium text-gray-800 underline cursor-pointer hover:text-gray-600">
-                Sign in
-              </span>
+            <p 
+              className="text-center text-gray-600 text-base"
+              style={{
+                textAlign: 'center',
+                color: '#6b7280',
+                fontSize: '16px',
+                margin: 0
+              }}
+            >
+              By using this service, you consent to<br />
+              our <span 
+                className="underline cursor-pointer"
+                style={{
+                  textDecoration: 'underline',
+                  cursor: 'pointer'
+                }}
+              >Terms and Conditions</span>.
             </p>
           </div>
         ) : (
@@ -78,6 +152,5 @@ export const XionLogin: React.FC = () => {
 };
 
 
-  
 
-  
+
