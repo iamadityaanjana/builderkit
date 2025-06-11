@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import "@burnt-labs/abstraxion/dist/index.css";
 import "@burnt-labs/ui/dist/index.css";
 import { savePaymentSession } from '../utils/payment';
-import { xionToBaseUnits, createTransferMessage } from '../utils/xionHelpers';
+import { createTransferMessage } from '../utils/xionHelpers';
 
 interface Product {
   id: string;
@@ -15,6 +15,7 @@ interface Product {
 
 interface CheckoutPageProps {
   products?: Product[];
+  onPaymentSuccess?: (transactionHash: string) => void;
 }
 
 export const CheckoutPage: React.FC<CheckoutPageProps> = ({ 
@@ -22,17 +23,20 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     { id: "xion1-3ab", name: "Premium Service", price: 0.1, quantity: 2 },
   { id: "xion2-def", name: "Basic Plan", price: 0.05, quantity: 1 },
   { id: "xion3-ghi", name: "Add-on Feature", price: 0.02, quantity: 3 }
-  ] 
+  ],
+  onPaymentSuccess
 }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSuccessful, setPaymentSuccessful] = useState(false);
+  const [transactionHash, setTransactionHash] = useState<string>('');
   const { client } = useAbstraxionSigningClient();
   const { data: account, isConnected } = useAbstraxionAccount();
   const [, setShowModal] = useModal();
 
   // Calculate totals
   const subtotal = products.reduce((sum, product) => sum + (product.price * product.quantity), 0);
-  const otherCharges = 0; // No additional charges
+  const otherCharges: number = 0; // No additional charges
   const totalAmount = subtotal + otherCharges;
 
   const handlePayNow = async () => {
@@ -65,14 +69,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       await savePaymentSession(paymentData);
       
       // Create transfer message
-      const recipientAddress = "xion1h4nh5ntx0cf5qrp0gny3qhqjw5jnqjdqgqx8tj"; // Demo recipient
-      const amountInBaseUnits = xionToBaseUnits(totalAmount.toString());
+      const recipientAddress = "xion1rglsd95g5dyh2jdl4q7eug858tcpm9j7svfqq8dah702ckyq6rnqx5w487"; // Demo recipient
       
       const transferMsg = createTransferMessage(
         account!.bech32Address,
         recipientAddress,
-        amountInBaseUnits,
-        "uxion"
+        totalAmount.toString()
       );
 
       const fee = {
@@ -88,9 +90,19 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       );
 
       console.log('Payment successful! Transaction hash:', result.transactionHash);
-      toast.success(`Payment successful! Tx: ${result.transactionHash.slice(0, 8)}...`, {
-        autoClose: 5000
-      });
+      
+      // Set success state
+      setTransactionHash(result.transactionHash);
+      setPaymentSuccessful(true);
+      
+      // Call custom success handler or show default success message
+      if (onPaymentSuccess) {
+        onPaymentSuccess(result.transactionHash);
+      } else {
+        toast.success(`Transaction Successful! Tx: ${result.transactionHash.slice(0, 8)}...`, {
+          autoClose: 5000
+        });
+      }
       
     } catch (error) {
       console.error('Payment failed:', error);
@@ -188,6 +200,138 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               }}
             >
               Login with Xion
+            </button>
+          </div>
+        ) : paymentSuccessful ? (
+          // Payment Success State
+          <div 
+            className="text-center"
+            style={{
+              textAlign: 'center'
+            }}
+          >
+            <div 
+              className="mb-6"
+              style={{
+                marginBottom: '24px'
+              }}
+            >
+              <div 
+                className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  backgroundColor: '#dcfce7',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px'
+                }}
+              >
+                <svg 
+                  className="w-8 h-8 text-green-600" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    color: '#16a34a'
+                  }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              <h1 
+                className="text-2xl font-bold text-black mb-3"
+                style={{
+                  fontSize: '28px',
+                  fontWeight: 'bold',
+                  color: 'black',
+                  marginBottom: '12px',
+                  margin: 0,
+                  lineHeight: '1.2'
+                }}
+              >
+                Payment Successful!
+              </h1>
+              
+              <p 
+                className="text-base text-gray-700 mb-4"
+                style={{
+                  fontSize: '16px',
+                  color: '#374151',
+                  marginBottom: '16px',
+                  margin: 0,
+                  lineHeight: '1.5'
+                }}
+              >
+                Your transaction has been completed successfully.
+              </p>
+              
+              <div 
+                className="bg-gray-50 p-3 rounded-lg border"
+                style={{
+                  backgroundColor: '#f9fafb',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}
+              >
+                <p 
+                  className="text-xs text-gray-500 mb-1"
+                  style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    marginBottom: '4px',
+                    margin: 0
+                  }}
+                >
+                  Transaction Hash
+                </p>
+                <p 
+                  className="font-mono text-sm text-gray-800 break-all"
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '14px',
+                    color: '#1f2937',
+                    wordBreak: 'break-all',
+                    margin: 0
+                  }}
+                >
+                  {transactionHash}
+                </p>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => {
+                setPaymentSuccessful(false);
+                setTransactionHash('');
+              }}
+              className="w-full bg-black text-white py-3 px-6 rounded-lg text-base font-medium transition-all duration-200 hover:bg-gray-800"
+              style={{
+                width: '100%',
+                backgroundColor: 'black',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#374151';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'black';
+              }}
+            >
+              New Transaction
             </button>
           </div>
         ) : (
