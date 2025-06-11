@@ -40,9 +40,9 @@ export const PaywallPage: React.FC = () => {
             <div className="p-4">
               <Paywall 
                 contentId="article-123"
-                price="0.1"
-                title="Premium Article: Web3 in 2025"
-                description="Get access to this in-depth analysis of Web3 trends"
+                contentPrice="0.1"
+                contentTitle="Premium Article: Web3 in 2025"
+                contentDescription="Get access to this in-depth analysis of Web3 trends"
               >
                 <div className="prose">
                   <h3 className="text-xl font-bold">Web3 Market Trends in 2025</h3>
@@ -76,9 +76,9 @@ export const PaywallPage: React.FC = () => {
             <div className="p-4">
               <Paywall 
                 contentId="course-456"
-                price="0.5"
-                title="Blockchain Development Masterclass"
-                description="Get lifetime access to our comprehensive video course"
+                contentPrice="0.5"
+                contentTitle="Blockchain Development Masterclass"
+                contentDescription="Get lifetime access to our comprehensive video course"
               >
                 <div>
                   <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg mb-4 flex items-center justify-center">

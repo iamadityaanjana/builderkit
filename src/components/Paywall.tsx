@@ -5,10 +5,10 @@ import { toast } from 'react-toastify';
 
 interface PaywallProps {
   contentId: string;
-  price: string; // in XION
+  contentPrice: string; // in XION
   children: React.ReactNode;
-  title?: string;
-  description?: string;
+  contentTitle?: string;
+  contentDescription?: string;
 }
 
 interface UserMapData {
@@ -20,10 +20,10 @@ interface UserMapData {
 
 export const Paywall: React.FC<PaywallProps> = ({ 
   contentId, 
-  price, 
+  contentPrice, 
   children,
-  title = 'Premium Content',
-  description = 'Unlock this premium content with a one-time payment'
+  contentTitle = 'Premium Content',
+  contentDescription = 'Unlock this premium content with a one-time payment'
 }) => {
   const { data: account } = useAbstraxionAccount();
   const { client: signingClient } = useAbstraxionSigningClient();
@@ -31,24 +31,45 @@ export const Paywall: React.FC<PaywallProps> = ({
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [userMapData, setUserMapData] = useState<UserMapData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const walletAddress = account?.bech32Address || '';
   const contractAddress = config.contractAddress;
   const treasuryAddress = config.treasuryAddress;
+
+  // Add CSS keyframes for spinner animation
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   
   // Debug logging
   useEffect(() => {
     console.log('Paywall component mounted with:', {
       contentId,
-      price,
+      contentPrice,
       walletAddress,
       contractAddress,
       treasuryAddress,
       signingClient: !!signingClient
     });
-  }, [contentId, price, walletAddress, contractAddress, treasuryAddress, signingClient]);
+  }, [contentId, contentPrice, walletAddress, contractAddress, treasuryAddress, signingClient]);
 
   // Check if user has already purchased this content
   useEffect(() => {
@@ -116,9 +137,10 @@ export const Paywall: React.FC<PaywallProps> = ({
     try {
       setProcessing(true);
       setError(null);
+      setShowConfirmation(false);
       
       // Convert price from XION to uxion (micro XION)
-      const priceInMicroXion = String(parseFloat(price) * 1_000_000);
+      const priceInMicroXion = String(parseFloat(contentPrice) * 1_000_000);
       
       toast.info('Processing payment...');
       
@@ -178,8 +200,34 @@ export const Paywall: React.FC<PaywallProps> = ({
   // Show login prompt if wallet not connected
   if (!walletAddress) {
     return (
-      <div className="border rounded-lg p-6 text-center bg-gray-50">
-        <p className="mb-3 text-gray-700">Please connect your wallet to access this content.</p>
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f9fafb'
+        }}
+      >
+        <div 
+          style={{
+            backgroundColor: 'white',
+            padding: '32px',
+            borderRadius: '8px',
+            border: '1px solid black',
+            width: '320px',
+            textAlign: 'center'
+          }}
+        >
+          <p 
+            style={{
+              color: 'black',
+              fontSize: '14px',
+              margin: 0
+            }}
+          >
+            Please connect your wallet to access this content.
+          </p>
+        </div>
       </div>
     );
   }
@@ -187,9 +235,45 @@ export const Paywall: React.FC<PaywallProps> = ({
   // Show loading state
   if (loading) {
     return (
-      <div className="border rounded-lg p-6 text-center bg-gray-50">
-        <p className="text-gray-700">Checking access status...</p>
-        <div className="mt-3 mx-auto w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f9fafb'
+        }}
+      >
+        <div 
+          style={{
+            backgroundColor: 'white',
+            padding: '32px',
+            borderRadius: '8px',
+            border: '1px solid black',
+            width: '320px',
+            textAlign: 'center'
+          }}
+        >
+          <div 
+            style={{
+              width: '32px',
+              height: '32px',
+              border: '2px solid #e5e7eb',
+              borderTopColor: 'black',
+              borderRadius: '50%',
+              margin: '0 auto 16px',
+              animation: 'spin 1s linear infinite'
+            }}
+          ></div>
+          <p 
+            style={{
+              color: 'black',
+              fontSize: '14px',
+              margin: 0
+            }}
+          >
+            Checking access status...
+          </p>
+        </div>
       </div>
     );
   }
@@ -197,57 +281,391 @@ export const Paywall: React.FC<PaywallProps> = ({
   // If user has access, show the content
   if (hasAccess) {
     return (
-      <div className="border rounded-lg p-6 bg-green-50">
-        <div className="mb-3 flex items-center justify-center">
-          <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <p className="text-green-700 font-medium">Content Unlocked</p>
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f9fafb'
+        }}
+      >
+        <div 
+          style={{
+            backgroundColor: 'white',
+            padding: '32px',
+            borderRadius: '8px',
+            border: '1px solid black',
+            width: '320px',
+            textAlign: 'center'
+          }}
+        >
+          <div 
+            style={{
+              width: '48px',
+              height: '48px',
+              backgroundColor: '#dcfce7',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px'
+            }}
+          >
+            <svg 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              style={{
+                width: '24px',
+                height: '24px',
+                color: '#16a34a'
+              }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 
+            style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: 'black',
+              marginBottom: '8px',
+              margin: '0 0 8px 0'
+            }}
+          >
+            Content Unlocked!
+          </h2>
+          <p 
+            style={{
+              color: 'black',
+              fontSize: '14px',
+              marginBottom: '24px',
+              margin: '0 0 24px 0'
+            }}
+          >
+            You now have permanent access
+          </p>
+          <div style={{ width: '100%' }}>
+            {children}
+          </div>
         </div>
-        <div className="bg-white border rounded p-4">{children}</div>
+      </div>
+    );
+  }
+
+  // Payment confirmation dialog
+  if (showConfirmation) {
+    return (
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f9fafb'
+        }}
+      >
+        <div 
+          style={{
+            backgroundColor: 'white',
+            padding: '32px',
+            borderRadius: '8px',
+            border: '1px solid black',
+            width: '320px',
+            textAlign: 'center'
+          }}
+        >
+          <h2 
+            style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: 'black',
+              marginBottom: '16px',
+              margin: '0 0 16px 0'
+            }}
+          >
+            Confirm Payment
+          </h2>
+          <p 
+            style={{
+              color: 'black',
+              fontSize: '14px',
+              marginBottom: '8px',
+              margin: '0 0 8px 0'
+            }}
+          >
+            You are about to purchase:
+          </p>
+          <p 
+            style={{
+              color: 'black',
+              fontSize: '16px',
+              fontWeight: '600',
+              marginBottom: '8px',
+              margin: '0 0 8px 0'
+            }}
+          >
+            {contentTitle}
+          </p>
+          <p 
+            style={{
+              color: 'black',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              marginBottom: '24px',
+              margin: '0 0 24px 0'
+            }}
+          >
+            {contentPrice} XION
+          </p>
+          
+          {error && (
+            <div 
+              style={{
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '4px',
+                padding: '8px',
+                marginBottom: '16px',
+                color: '#dc2626',
+                fontSize: '12px'
+              }}
+            >
+              {error}
+            </div>
+          )}
+          
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              style={{
+                flex: 1,
+                backgroundColor: '#f3f4f6',
+                color: 'black',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontWeight: '500',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onClick={() => setShowConfirmation(false)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#e5e7eb';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              style={{
+                flex: 1,
+                backgroundColor: 'black',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontWeight: '500',
+                border: 'none',
+                cursor: processing ? 'not-allowed' : 'pointer',
+                opacity: processing ? 0.5 : 1,
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onClick={unlockContent}
+              disabled={processing}
+              onMouseEnter={(e) => {
+                if (!processing) {
+                  e.currentTarget.style.backgroundColor = '#374151';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!processing) {
+                  e.currentTarget.style.backgroundColor = 'black';
+                }
+              }}
+            >
+              {processing ? (
+                <>
+                  <div 
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid white',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      marginRight: '8px',
+                      animation: 'spin 1s linear infinite'
+                    }}
+                  ></div>
+                  Processing...
+                </>
+              ) : (
+                'Confirm Payment'
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   // Otherwise show the paywall
   return (
-    <div className="border rounded-lg p-6 text-center bg-yellow-50">
-      <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-      <p className="mt-2 mb-4 text-gray-700">{description}</p>
-      
-      <div className="bg-white/50 border rounded-lg p-4 mb-4">
-        <div className="flex items-center justify-center space-x-2">
-          <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 116 0z" clipRule="evenodd" />
-          </svg>
-          <p className="text-gray-500">Content is locked</p>
-        </div>
-      </div>
-      
-      <p className="font-medium text-gray-900">One-time payment: <span className="text-blue-600">{price} XION</span></p>
-      
-      {error && (
-        <div className="mt-3 p-2 bg-red-100 text-red-700 text-sm rounded">
-          {error}
-        </div>
-      )}
-      
-      <button
-        className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={unlockContent}
-        disabled={processing}
+    <div 
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f9fafb'
+      }}
+    >
+      <div 
+        style={{
+          backgroundColor: 'white',
+          padding: '32px',
+          borderRadius: '8px',
+          border: '1px solid black',
+          width: '320px',
+          textAlign: 'center'
+        }}
       >
-        {processing ? (
-          <>
-            <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
-            Processing...
-          </>
-        ) : (
-          'Unlock Now'
+        {/* Lock Icon */}
+        <div 
+          style={{
+            width: '64px',
+            height: '64px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px'
+          }}
+        >
+          <svg 
+            fill="currentColor" 
+            viewBox="0 0 24 24"
+            style={{
+              width: '48px',
+              height: '48px',
+              color: 'black'
+            }}
+          >
+            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM12 17c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM15.1 8H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/>
+          </svg>
+        </div>
+        
+        {/* Content Title */}
+        <h2 
+          style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: 'black',
+            marginBottom: '8px',
+            margin: '0 0 8px 0'
+          }}
+        >
+          {contentTitle}
+        </h2>
+        
+        {/* Content Description */}
+        <p 
+          style={{
+            color: 'black',
+            fontSize: '14px',
+            marginBottom: '16px',
+            margin: '0 0 16px 0'
+          }}
+        >
+          {contentDescription}
+        </p>
+        
+        {/* Status Badge */}
+        <div 
+          style={{
+            backgroundColor: '#fef3c7',
+            border: '1px solid #fbbf24',
+            borderRadius: '4px',
+            padding: '8px 12px',
+            marginBottom: '16px',
+            fontSize: '12px',
+            fontWeight: '500',
+            color: '#92400e'
+          }}
+        >
+          🔒 Content Locked
+        </div>
+        
+        {/* Price */}
+        <p 
+          style={{
+            color: 'black',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            marginBottom: '16px',
+            margin: '0 0 16px 0'
+          }}
+        >
+          One-time payment: {contentPrice} XION
+        </p>
+        
+        {error && (
+          <div 
+            style={{
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '4px',
+              padding: '8px',
+              marginBottom: '16px',
+              color: '#dc2626',
+              fontSize: '12px'
+            }}
+          >
+            {error}
+          </div>
         )}
-      </button>
-      
-      <p className="mt-3 text-xs text-gray-500">You'll only pay once for permanent access</p>
+        
+        {/* Unlock Button */}
+        <button
+          style={{
+            display: 'inline-block',
+            width: '100%',
+            backgroundColor: 'black',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '4px',
+            fontSize: '14px',
+            fontWeight: '500',
+            textDecoration: 'none',
+            transition: 'all 0.2s ease',
+            boxSizing: 'border-box',
+            border: 'none',
+            cursor: 'pointer'
+          }}
+          onClick={() => setShowConfirmation(true)}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#374151';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'black';
+          }}
+        >
+          Unlock Content
+        </button>
+        
+        <p 
+          style={{
+            color: '#6b7280',
+            fontSize: '12px',
+            marginTop: '12px',
+            margin: '12px 0 0 0'
+          }}
+        >
+          You'll only pay once for permanent access
+        </p>
+      </div>
     </div>
   );
 };
