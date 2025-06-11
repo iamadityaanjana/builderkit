@@ -15,21 +15,27 @@ interface Product {
 
 interface CheckoutPageProps {
   products?: Product[];
+  recipientAddress?: string;
   onPaymentSuccess?: (transactionHash: string) => void;
+  onBackToHome?: () => void;
 }
 
 export const CheckoutPage: React.FC<CheckoutPageProps> = ({ 
   products = [
-    { id: "xion1-3ab", name: "Premium Service", price: 0.1, quantity: 2 },
-  { id: "xion2-def", name: "Basic Plan", price: 0.05, quantity: 1 },
-  { id: "xion3-ghi", name: "Add-on Feature", price: 0.02, quantity: 3 }
+    { id: "xion1-3ab", name: "Premium Service", price: 0.01, quantity: 2 },
+  { id: "xion2-def", name: "Basic Plan", price: 0.005, quantity: 1 },
+  { id: "xion3-ghi", name: "Add-on Feature", price: 0.002, quantity: 3 }
   ],
-  onPaymentSuccess
+  recipientAddress = "xion1rglsd95g5dyh2jdl4q7eug858tcpm9j7svfqq8dah702ckyq6rnqx5w487",
+  onPaymentSuccess,
+  onBackToHome
 }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccessful, setPaymentSuccessful] = useState(false);
+  const [paymentFailed, setPaymentFailed] = useState(false);
   const [transactionHash, setTransactionHash] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const { client } = useAbstraxionSigningClient();
   const { data: account, isConnected } = useAbstraxionAccount();
   const [, setShowModal] = useModal();
@@ -68,13 +74,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       
       await savePaymentSession(paymentData);
       
-      // Create transfer message
-      const recipientAddress = "xion1rglsd95g5dyh2jdl4q7eug858tcpm9j7svfqq8dah702ckyq6rnqx5w487"; // Demo recipient
-      
+      // Create transfer message - createTransferMessage handles XION to uxion conversion internally
       const transferMsg = createTransferMessage(
         account!.bech32Address,
         recipientAddress,
-        totalAmount.toString()
+        totalAmount.toString() // Pass XION amount, function will convert to uxion internally
       );
 
       const fee = {
@@ -89,23 +93,39 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         fee
       );
 
-      console.log('Payment successful! Transaction hash:', result.transactionHash);
+      console.log('Payment transaction result:', result);
       
-      // Set success state
-      setTransactionHash(result.transactionHash);
-      setPaymentSuccessful(true);
-      
-      // Call custom success handler or show default success message
-      if (onPaymentSuccess) {
-        onPaymentSuccess(result.transactionHash);
+      // Check if transaction was successful
+      if (result.code === 0) {
+        console.log('Payment successful! Transaction hash:', result.transactionHash);
+        
+        // Set success state
+        setTransactionHash(result.transactionHash);
+        setPaymentSuccessful(true);
+        setPaymentFailed(false);
+        
+        // Call custom success handler or show default success message
+        if (onPaymentSuccess) {
+          onPaymentSuccess(result.transactionHash);
+        } else {
+          toast.success(`Transaction Successful! Tx: ${result.transactionHash.slice(0, 8)}...`, {
+            autoClose: 5000
+          });
+        }
       } else {
-        toast.success(`Transaction Successful! Tx: ${result.transactionHash.slice(0, 8)}...`, {
-          autoClose: 5000
-        });
+        // Transaction failed
+        console.error('Transaction failed with code:', result.code, result.rawLog);
+        setPaymentFailed(true);
+        setPaymentSuccessful(false);
+        setErrorMessage(result.rawLog || 'Transaction failed');
+        toast.error('Transaction failed. Please try again.');
       }
       
     } catch (error) {
       console.error('Payment failed:', error);
+      setPaymentFailed(true);
+      setPaymentSuccessful(false);
+      setErrorMessage(error instanceof Error ? error.message : 'Payment failed. Please try again.');
       toast.error('Payment failed. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -308,8 +328,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             
             <button
               onClick={() => {
-                setPaymentSuccessful(false);
-                setTransactionHash('');
+                if (onBackToHome) {
+                  onBackToHome();
+                } else {
+                  // Default behavior - redirect to home
+                  window.location.href = '/';
+                }
               }}
               className="w-full bg-black text-white py-3 px-6 rounded-lg text-base font-medium transition-all duration-200 hover:bg-gray-800"
               style={{
@@ -331,8 +355,184 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 e.currentTarget.style.backgroundColor = 'black';
               }}
             >
-              New Transaction
+              Back to Home
             </button>
+          </div>
+        ) : paymentFailed ? (
+          // Payment Failed State
+          <div 
+            className="text-center"
+            style={{
+              textAlign: 'center'
+            }}
+          >
+            <div 
+              className="mb-6"
+              style={{
+                marginBottom: '24px'
+              }}
+            >
+              <div 
+                className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  backgroundColor: '#fef2f2',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px'
+                }}
+              >
+                <svg 
+                  className="w-8 h-8 text-red-600" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    color: '#dc2626'
+                  }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              
+              <h1 
+                className="text-2xl font-bold text-black mb-3"
+                style={{
+                  fontSize: '28px',
+                  fontWeight: 'bold',
+                  color: 'black',
+                  marginBottom: '12px',
+                  margin: 0,
+                  lineHeight: '1.2'
+                }}
+              >
+                Payment Failed
+              </h1>
+              
+              <p 
+                className="text-base text-gray-700 mb-4"
+                style={{
+                  fontSize: '16px',
+                  color: '#374151',
+                  marginBottom: '16px',
+                  margin: 0,
+                  lineHeight: '1.5'
+                }}
+              >
+                Your transaction could not be completed.
+              </p>
+              
+              {errorMessage && (
+                <div 
+                  className="bg-red-50 p-3 rounded-lg border border-red-200 mb-4"
+                  style={{
+                    backgroundColor: '#fef2f2',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #fecaca',
+                    marginBottom: '16px'
+                  }}
+                >
+                  <p 
+                    className="text-xs text-red-500 mb-1"
+                    style={{
+                      fontSize: '12px',
+                      color: '#ef4444',
+                      marginBottom: '4px',
+                      margin: 0
+                    }}
+                  >
+                    Error Details
+                  </p>
+                  <p 
+                    className="text-sm text-red-700 break-words"
+                    style={{
+                      fontSize: '14px',
+                      color: '#b91c1c',
+                      wordBreak: 'break-word',
+                      margin: 0
+                    }}
+                  >
+                    {errorMessage}
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div 
+              className="flex gap-3"
+              style={{
+                display: 'flex',
+                gap: '12px'
+              }}
+            >
+              <button
+                onClick={() => {
+                  if (onBackToHome) {
+                    onBackToHome();
+                  } else {
+                    // Default behavior - redirect to home
+                    window.location.href = '/';
+                  }
+                }}
+                className="flex-1 bg-white text-black py-3 px-6 rounded-lg text-base font-medium border border-gray-300 transition-all duration-200 hover:bg-gray-50"
+                style={{
+                  flex: 1,
+                  backgroundColor: 'white',
+                  color: 'black',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  border: '1px solid #d1d5db',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                }}
+              >
+                Back to Home
+              </button>
+              
+              <button
+                onClick={() => {
+                  setPaymentFailed(false);
+                  setPaymentSuccessful(false);
+                  setTransactionHash('');
+                  setErrorMessage('');
+                }}
+                className="flex-1 bg-black text-white py-3 px-6 rounded-lg text-base font-medium transition-all duration-200 hover:bg-gray-800"
+                style={{
+                  flex: 1,
+                  backgroundColor: 'black',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#374151';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'black';
+                }}
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         ) : (
           // Checkout Receipt State

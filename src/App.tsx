@@ -24,6 +24,17 @@ function App() {
     treasury: config.treasuryAddress
   };
 
+  // Handle successful payment
+  const handlePaymentSuccess = (transactionHash: string) => {
+    console.log('Payment completed successfully:', transactionHash);
+    // Add any custom success logic here
+  };
+
+  // Handle back to home navigation
+  const handleBackToHome = () => {
+    window.location.href = '/';
+  };
+
   return (
     <AbstraxionProvider config={abstraxionConfig}>
       <Abstraxion onClose={() => {}} />
@@ -43,7 +54,16 @@ function App() {
         <Navigation />
         <Routes>
           <Route path="/" element={<LoginPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route 
+            path="/checkout" 
+            element={
+              <CheckoutPage 
+                recipientAddress="xion1rglsd95g5dyh2jdl4q7eug858tcpm9j7svfqq8dah702ckyq6rnqx5w487"
+                onPaymentSuccess={handlePaymentSuccess}
+                onBackToHome={handleBackToHome}
+              />
+            } 
+          />
           <Route path="/nft-access" element={<NFTGatedPage />} />
           <Route path="/transaction-toast" element={<TransactionToastPage />} />
           <Route path="/smart-profile" element={<SmartProfilePage />} />
