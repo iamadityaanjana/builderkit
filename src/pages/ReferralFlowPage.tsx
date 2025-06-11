@@ -7,91 +7,94 @@ const ReferralFlowPage: React.FC = () => {
   const { client } = useAbstraxionSigningClient();
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#f8f9fa',
+      padding: '40px 20px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      <div style={{
+        maxWidth: '600px',
+        margin: '0 auto'
+      }}>
         {/* Header Section */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Referral Program</h1>
-          <p className="text-gray-600">Invite friends to XION and earn rewards</p>
+        <div style={{
+          textAlign: 'center' as const,
+          marginBottom: '32px'
+        }}>
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '700',
+            color: '#000000',
+            margin: '0 0 8px'
+          }}>Referral Program</h1>
+          <p style={{
+            fontSize: '14px',
+            color: '#666666',
+            margin: '0'
+          }}>Invite friends to XION and earn rewards</p>
         </div>
         
-        {/* Main Content */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Referral Flow Component */}
-          <div className="md:col-span-2">
-            <ReferralFlow rewardAmount={5} />
-          </div>
-          
-          {/* Sidebar Section */}
-          <div className="space-y-6">
-            {/* How It Works */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">How It Works</h2>
-              <ol className="space-y-4">
-                <li className="flex items-start">
-                  <span className="flex items-center justify-center h-5 w-5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold mr-2 mt-0.5">1</span>
-                  <span className="text-gray-600 text-sm">Generate your unique referral code</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="flex items-center justify-center h-5 w-5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold mr-2 mt-0.5">2</span>
-                  <span className="text-gray-600 text-sm">Share your referral link with friends</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="flex items-center justify-center h-5 w-5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold mr-2 mt-0.5">3</span>
-                  <span className="text-gray-600 text-sm">Friends create an account using your link</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="flex items-center justify-center h-5 w-5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold mr-2 mt-0.5">4</span>
-                  <span className="text-gray-600 text-sm">You earn 5 XION tokens for each successful referral</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="flex items-center justify-center h-5 w-5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold mr-2 mt-0.5">5</span>
-                  <span className="text-gray-600 text-sm">Claim your rewards anytime</span>
-                </li>
-              </ol>
-            </div>
-            
-            {/* Connection Status */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Connection Status</h2>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Wallet</p>
-                  <div className="flex items-center">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${account ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <p className="text-sm">{account ? 'Connected' : 'Not Connected'}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Address</p>
-                  <p className="text-xs font-mono bg-gray-50 p-2 rounded break-all">
-                    {account?.bech32Address || 'Not connected'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Signing Client</p>
-                  <div className="flex items-center">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${client ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <p className="text-sm">{client ? 'Ready' : 'Not Ready'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* About On-Chain Referrals */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">About On-Chain Referrals</h2>
-              <p className="text-sm text-gray-600 mb-3">
-                This referral system is fully on-chain, leveraging XION's User Map contract for storing and retrieving referral relationships.
-              </p>
-              <p className="text-sm text-gray-600 mb-3">
-                All data is stored in a decentralized manner, ensuring transparency and persistence of your referral history and rewards.
-              </p>
-              <p className="text-sm text-gray-600">
-                Rewards are also processed on-chain through XION's token transfer mechanism.
-              </p>
+        {/* Main Referral Flow Component */}
+        <div style={{ marginBottom: '32px' }}>
+          <ReferralFlow rewardAmount={5} />
+        </div>
+        
+        {/* Connection Status (Minimal) */}
+        {account && (
+          <div style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '20px',
+            textAlign: 'center' as const
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '8px'
+            }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: account && client ? '#22c55e' : '#ef4444',
+                marginRight: '8px'
+              }}></div>
+              <span style={{
+                fontSize: '12px',
+                color: '#666666'
+              }}>
+                {account && client ? 'Connected & Ready' : 'Connection Issues'}
+              </span>
             </div>
           </div>
+        )}
+        
+        {/* Simple How It Works */}
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          padding: '20px',
+          textAlign: 'center' as const
+        }}>
+          <h2 style={{
+            fontSize: '14px',
+            fontWeight: '600',
+            color: '#000000',
+            margin: '0 0 12px'
+          }}>How It Works</h2>
+          <p style={{
+            fontSize: '12px',
+            color: '#666666',
+            lineHeight: '1.5',
+            margin: '0'
+          }}>
+            Generate your referral code, share it with friends, and earn 5 XION tokens for each person who signs up using your code. All referral data is stored securely on the XION blockchain.
+          </p>
         </div>
       </div>
     </div>

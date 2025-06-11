@@ -32,7 +32,6 @@ export const Paywall: React.FC<PaywallProps> = ({
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [userMapData, setUserMapData] = useState<UserMapData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const walletAddress = account?.bech32Address || '';
@@ -93,7 +92,6 @@ export const Paywall: React.FC<PaywallProps> = ({
         if (response) {
           try {
             const data: UserMapData = JSON.parse(response);
-            setUserMapData(data);
             
             // Check if user has access to this content
             if (data.purchased && data.purchased[contentId]) {
@@ -105,11 +103,11 @@ export const Paywall: React.FC<PaywallProps> = ({
             }
           } catch (e) {
             console.error('Failed to parse user map data:', e);
-            setUserMapData({});
+            setHasAccess(false);
           }
         } else {
           // No user map data found
-          setUserMapData({});
+          setHasAccess(false);
         }
       } catch (e) {
         console.error('Error checking access:', e);
@@ -137,7 +135,6 @@ export const Paywall: React.FC<PaywallProps> = ({
     try {
       setProcessing(true);
       setError(null);
-      setShowConfirmation(false);
       
       // Convert price from XION to uxion (micro XION)
       const priceInMicroXion = String(parseFloat(contentPrice) * 1_000_000);
@@ -150,18 +147,37 @@ export const Paywall: React.FC<PaywallProps> = ({
         treasuryAddress,
         [{ denom: 'uxion', amount: priceInMicroXion }],
         {
-          amount: [{ denom: 'uxion', amount: '5000' }],
+          amount: [{ denom: 'uxion', amount: '200' }], // Updated fee amount
           gas: '200000'
         }
       );
       
       console.log('Payment transaction:', paymentResult);
       
-      // Step 2: Update User Map with contentId
-      // First get the existing data
-      const currentData = userMapData || {};
+      // Check if payment was successful - check transactionHash exists
+      if (!paymentResult.transactionHash) {
+        throw new Error('Payment failed: No transaction hash received');
+      }
       
-      // Update the purchased field
+      // Step 2: Update User Map with contentId - preserve existing data
+      let currentData: UserMapData = {};
+      
+      // First, try to get existing user data
+      try {
+        const existingResponse = await signingClient.queryContractSmart(contractAddress, {
+          get_value_by_user: { address: walletAddress }
+        });
+        
+        if (existingResponse) {
+          currentData = JSON.parse(existingResponse);
+          console.log('Found existing user data:', currentData);
+        }
+      } catch (queryErr) {
+        console.log('No existing user data found, creating new:', queryErr);
+        // This is fine, we'll create new data
+      }
+      
+      // Merge the new contentId with existing purchased items
       const updatedData: UserMapData = {
         ...currentData,
         purchased: {
@@ -170,7 +186,8 @@ export const Paywall: React.FC<PaywallProps> = ({
         }
       };
       
-      console.log('Updating user map with:', updatedData);
+      console.log('Updating user map with merged data:', updatedData);
+      console.log(`Adding contentId "${contentId}" to existing purchases:`, currentData.purchased || {});
       
       // Execute the update
       const updateResult = await signingClient.execute(
@@ -184,14 +201,21 @@ export const Paywall: React.FC<PaywallProps> = ({
       
       console.log('User map update transaction:', updateResult);
       
+      // Check if update was successful - check transactionHash exists
+      if (!updateResult.transactionHash) {
+        throw new Error('User map update failed: No transaction hash received');
+      }
+      
       // Update local state
-      setUserMapData(updatedData);
       setHasAccess(true);
+      setShowConfirmation(false);
       toast.success('Content unlocked successfully!');
+      
     } catch (err) {
       console.error('Payment or update failed:', err);
-      setError(`Failed to unlock content: ${err instanceof Error ? err.message : String(err)}`);
-      toast.error(`Payment failed: ${err instanceof Error ? err.message : 'Transaction error'}`);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Failed to unlock content: ${errorMessage}`);
+      toast.error(`Payment failed: ${errorMessage}`);
     } finally {
       setProcessing(false);
     }
@@ -205,7 +229,9 @@ export const Paywall: React.FC<PaywallProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f9fafb'
+          minHeight: '300px',
+          backgroundColor: '#f9fafb',
+          padding: '24px'
         }}
       >
         <div 
@@ -227,6 +253,33 @@ export const Paywall: React.FC<PaywallProps> = ({
           >
             Please connect your wallet to access this content.
           </p>
+          <button 
+            style={{
+              width: '100%',
+              backgroundColor: 'black',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '4px',
+              fontSize: '14px',
+              fontWeight: '500',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              marginTop: '16px'
+            }}
+            onClick={() => {
+              const event = new CustomEvent('abstraxion:open');
+              window.dispatchEvent(event);
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#374151';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'black';
+            }}
+          >
+            Connect Wallet
+          </button>
         </div>
       </div>
     );
@@ -240,7 +293,9 @@ export const Paywall: React.FC<PaywallProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f9fafb'
+          minHeight: '300px',
+          backgroundColor: '#f9fafb',
+          padding: '24px'
         }}
       >
         <div 
@@ -278,82 +333,12 @@ export const Paywall: React.FC<PaywallProps> = ({
     );
   }
 
-  // If user has access, show the content
+  // If user has access, show the content without any overlay
   if (hasAccess) {
-    return (
-      <div 
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#f9fafb'
-        }}
-      >
-        <div 
-          style={{
-            backgroundColor: 'white',
-            padding: '32px',
-            borderRadius: '8px',
-            border: '1px solid black',
-            width: '320px',
-            textAlign: 'center'
-          }}
-        >
-          <div 
-            style={{
-              width: '48px',
-              height: '48px',
-              backgroundColor: '#dcfce7',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px'
-            }}
-          >
-            <svg 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-              style={{
-                width: '24px',
-                height: '24px',
-                color: '#16a34a'
-              }}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 
-            style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: 'black',
-              marginBottom: '8px',
-              margin: '0 0 8px 0'
-            }}
-          >
-            Content Unlocked!
-          </h2>
-          <p 
-            style={{
-              color: 'black',
-              fontSize: '14px',
-              marginBottom: '24px',
-              margin: '0 0 24px 0'
-            }}
-          >
-            You now have permanent access
-          </p>
-          <div style={{ width: '100%' }}>
-            {children}
-          </div>
-        </div>
-      </div>
-    );
+    return <>{children}</>;
   }
 
-  // Payment confirmation dialog
+  // Payment confirmation dialog - show in place
   if (showConfirmation) {
     return (
       <div 
@@ -361,7 +346,9 @@ export const Paywall: React.FC<PaywallProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f9fafb'
+          minHeight: '300px',
+          backgroundColor: '#f9fafb',
+          padding: '24px'
         }}
       >
         <div 
@@ -449,11 +436,16 @@ export const Paywall: React.FC<PaywallProps> = ({
                 transition: 'all 0.2s ease'
               }}
               onClick={() => setShowConfirmation(false)}
+              disabled={processing}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#e5e7eb';
+                if (!processing) {
+                  e.currentTarget.style.backgroundColor = '#e5e7eb';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                if (!processing) {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                }
               }}
             >
               Cancel
@@ -461,7 +453,7 @@ export const Paywall: React.FC<PaywallProps> = ({
             <button
               style={{
                 flex: 1,
-                backgroundColor: 'black',
+                backgroundColor: processing ? '#6b7280' : 'black',
                 color: 'white',
                 padding: '8px 16px',
                 borderRadius: '4px',
@@ -469,7 +461,7 @@ export const Paywall: React.FC<PaywallProps> = ({
                 fontWeight: '500',
                 border: 'none',
                 cursor: processing ? 'not-allowed' : 'pointer',
-                opacity: processing ? 0.5 : 1,
+                opacity: processing ? 0.8 : 1,
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
@@ -513,14 +505,16 @@ export const Paywall: React.FC<PaywallProps> = ({
     );
   }
 
-  // Otherwise show the paywall
+  // Otherwise show the paywall in place
   return (
     <div 
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#f9fafb'
+        minHeight: '300px',
+        backgroundColor: '#f9fafb',
+        padding: '24px'
       }}
     >
       <div 
@@ -630,9 +624,11 @@ export const Paywall: React.FC<PaywallProps> = ({
         {/* Unlock Button */}
         <button
           style={{
-            display: 'inline-block',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             width: '100%',
-            backgroundColor: 'black',
+            backgroundColor: processing ? '#6b7280' : 'black',
             color: 'white',
             padding: '8px 16px',
             borderRadius: '4px',
@@ -642,17 +638,40 @@ export const Paywall: React.FC<PaywallProps> = ({
             transition: 'all 0.2s ease',
             boxSizing: 'border-box',
             border: 'none',
-            cursor: 'pointer'
+            cursor: processing ? 'not-allowed' : 'pointer',
+            opacity: processing ? 0.8 : 1
           }}
           onClick={() => setShowConfirmation(true)}
+          disabled={processing}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#374151';
+            if (!processing) {
+              e.currentTarget.style.backgroundColor = '#374151';
+            }
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'black';
+            if (!processing) {
+              e.currentTarget.style.backgroundColor = 'black';
+            }
           }}
         >
-          Unlock Content
+          {processing ? (
+            <>
+              <div 
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid white',
+                  borderTopColor: 'transparent',
+                  borderRadius: '50%',
+                  marginRight: '8px',
+                  animation: 'spin 1s linear infinite'
+                }}
+              ></div>
+              Processing Payment...
+            </>
+          ) : (
+            'Unlock Content'
+          )}
         </button>
         
         <p 
