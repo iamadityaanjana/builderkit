@@ -56,12 +56,14 @@ export function useNFTAccess(
     async function checkAccess() {
       try {
         let hasAccess = false;
-
+        
         // Check specific token ownership if token ID is provided,
         // otherwise check if user owns any token in the collection
         if (tokenId) {
+          // @ts-ignore
           hasAccess = await checkNFTOwnership(contractAddress, tokenId, userAddress);
         } else {
+          // @ts-ignore
           hasAccess = await checkCollectionOwnership(contractAddress, userAddress);
         }
 

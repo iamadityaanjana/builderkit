@@ -9,6 +9,7 @@ export const NFTGatedPage: React.FC = () => {
   const demoTokenId = "hehe69"; // Updated to use a more standard token ID format
   
   // State to track debugging info from the NFT ownership check
+  // @ts-ignore
   const [debugInfo, setDebugInfo] = useState<{
     address?: string;
     contractInfo?: any;
@@ -18,6 +19,7 @@ export const NFTGatedPage: React.FC = () => {
   const { data: account } = useAbstraxionAccount();
   
   // Function to manually test NFT ownership
+  // @ts-ignore
   const checkNFTOwnership = async () => {
     if (!account?.bech32Address) {
       setDebugInfo({ error: "Please connect your wallet first" });

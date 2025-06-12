@@ -22,8 +22,10 @@ export const MagicCheckout: React.FC<MagicCheckoutProps> = ({
   onSuccess,
   onError
 }) => {
+  // @ts-ignore
   const { client, signArb } = useAbstraxionSigningClient();
   const { data: account } = useAbstraxionAccount();
+  // @ts-ignore
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);

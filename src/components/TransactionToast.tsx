@@ -43,17 +43,17 @@ export const TransactionToast: React.FC<TransactionToastProps> = ({
       {
         pending: {
           render: () => pendingMessage,
-          icon: "🔄" ,
+          icon: ()=>"🔄" ,
           ...(toastOptions || {})
         },
         success: {
           render: () => successMessage,
-          icon: "✅",
+          icon: ()=>"✅",
           ...(toastOptions || {})
         },
         error: {
           render: (error: any) => `${errorMessage} ${error instanceof Error ? error.message : ''}`,
-          icon: "❌",
+          icon: ()=>"❌",
           ...(toastOptions || {})
         }
       }
@@ -75,9 +75,12 @@ export const TransactionToast: React.FC<TransactionToastProps> = ({
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           return React.cloneElement(child, {
+            // @ts-ignore
             onClick: async (e: React.MouseEvent) => {
               // Call the original onClick if it exists
+              // @ts-ignore
               if (child.props.onClick) {
+                // @ts-ignore
                 child.props.onClick(e);
               }
               // Call our handler

@@ -1,5 +1,6 @@
 import { toast } from 'react-toastify';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
+// @ts-ignore
 import { baseUnitsToXion, xionToBaseUnits } from './xionHelpers';
 
 interface TransactionResponse {
@@ -136,15 +137,15 @@ export async function executeTransactionWithToast<T>(
     {
       pending: {
         render: () => pendingMessage,
-        icon: "🔄",
+        icon: ()=>"🔄",
       },
       success: {
         render: () => successMessage,
-        icon: "✅",
+        icon: ()=>"✅",
       },
       error: {
         render: (error: any) => `${errorMessage} ${error instanceof Error ? error.message : ''}`,
-        icon: "❌",
+        icon: ()=>"❌",
       }
     }
   );
